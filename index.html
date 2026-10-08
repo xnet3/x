@@ -136,6 +136,13 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hi
 .edbox textarea:focus{border-color:var(--bg4);box-shadow:0 0 0 4px var(--tint)}
 .edbar{display:flex;gap:8px;justify-content:flex-start;margin-top:8px}
 .edtag{color:var(--txt3)}
+.pm-wrap{position:relative}
+.pmenu{position:absolute;left:0;top:calc(100% + 4px);min-width:170px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 28px var(--shadow);padding:6px;display:none;z-index:30}
+.pmenu.open{display:block}
+.pmenu button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;background:none;border:none;border-radius:9px;color:var(--txt);font-size:13.5px;cursor:pointer;text-align:start}
+.pmenu button:hover{background:var(--bg2)}
+.pmenu button.danger{color:var(--red)}
+.pmenu svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head>
 <body>
@@ -202,6 +209,8 @@ const I = {
   heart: '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.7 7.9 3.6 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.3 3.4 4.2 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg>',
   share: '<svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>',
   pen: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16v4zM13.5 6.5l4 4"/></svg>',
+  dots: '<svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+  copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   img: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-9 9"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'
@@ -356,7 +365,7 @@ function postHtml(p) {
   return `<article class="fpost" data-id="${id}">
     <div class="fp-head"><div class="vav" onclick="go('channel','${u}')">${av(p)}</div>
       <div class="fp-who"><div class="fp-name" onclick="go('channel','${u}')">${x(p.name)}</div><div class="fp-time">${ago(p.createdAt)}${p.editedAt ? ' <span class="edtag">· נערך</span>' : ''}</div></div>
-      ${p.mine ? `<button class="fbtn" onclick="editPost('${id}')" title="ערוך" aria-label="ערוך">${I.pen}</button><button class="fbtn" onclick="delPost('${id}')" title="מחק" aria-label="מחק">${I.trash}</button>` : ''}</div>
+      ${(p.text || p.can) ? `<div class="pm-wrap"><button class="fbtn" onclick="pmenu(event,'${id}')" title="אפשרויות" aria-label="אפשרויות">${I.dots}</button><div class="pmenu">${p.text ? `<button onclick="copyPost('${id}')">${I.copy}<span>העתק טקסט</span></button>` : ''}${p.can ? `<button onclick="editPost('${id}')">${I.pen}<span>ערוך</span></button><button class="danger" onclick="delPost('${id}')">${I.trash}<span>מחק</span></button>` : ''}</div></div>` : ''}</div>
     ${p.text ? `<div class="fp-title">${x(p.text)}</div>` : ''}
     ${p.image ? `<div class="fmedia"><img src="${x(thumb(p.image))}" loading="lazy" alt=""></div>` : ''}
     <div class="fp-actions"><button class="fbtn like-btn ${p.liked ? 'on' : ''}" onclick="like('${id}')" title="אהבתי" aria-label="אהבתי">${I.heart}</button><span class="lc">${p.likes || ''}</span><span class="sp"></span>
@@ -387,13 +396,27 @@ async function publish() {
   const b = $('#cpost'); b.disabled = true;
   try {
     const r = await api('post', { text: t, image: img });
-    const p = { id: r.id, uid: me.uid, name: me.name, picture: me.picture, text: t, image: img, createdAt: r.createdAt, likes: 0, liked: false, mine: true };
+    const p = { id: r.id, uid: me.uid, name: me.name, picture: me.picture, text: t, image: img, createdAt: r.createdAt, likes: 0, liked: false, mine: true, can: true };
     posts.unshift(p); $('#feed-list').insertAdjacentHTML('afterbegin', postHtml(p));
     $('#ct').value = ''; img = ''; $('#cprev').innerHTML = ''; toast('הפוסט פורסם');
   } catch (e) {}
   b.disabled = false;
 }
+function closeMenus() { document.querySelectorAll('.pmenu.open').forEach(m => m.classList.remove('open')); }
+function pmenu(e, id) {
+  e.stopPropagation();
+  const m = e.currentTarget.parentElement.querySelector('.pmenu'), was = m.classList.contains('open');
+  closeMenus(); if (!was) m.classList.add('open');
+}
+async function copyPost(id) {
+  closeMenus();
+  const p = posts.find(p => p.id === id); if (!p || !p.text) return;
+  try { await navigator.clipboard.writeText(p.text); }
+  catch (e) { const t = document.createElement('textarea'); t.value = p.text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (er) {} t.remove(); }
+  toast('הטקסט הועתק');
+}
 function editPost(id) {
+  closeMenus();
   const p = posts.find(p => p.id === id), el = document.querySelector(`[data-id="${id}"]`);
   if (!p || !el || el.querySelector('.edbox')) return;
   const box = document.createElement('div'); box.className = 'edbox';
@@ -421,6 +444,7 @@ async function saveEdit(id) {
   } catch (e) { btn.disabled = false; }
 }
 async function delPost(id) {
+  closeMenus();
   if (!confirm('למחוק את הפוסט?')) return;
   try { await api('del', { id }); posts = posts.filter(p => p.id !== id); document.querySelector(`[data-id="${id}"]`).remove(); toast('הפוסט נמחק'); } catch (e) {}
 }
@@ -475,6 +499,7 @@ document.addEventListener('click', e => {
 });
 $('#pm').onclick = e => { if (e.target.id === 'pm') e.target.classList.remove('open'); };
 addEventListener('hashchange', route);
+document.addEventListener('click', closeMenus);
 initAuth(); renderAuth(); start();
 // הטוקן של גוגל פג אחרי שעה: בלחיצה הראשונה בדף מנסים להתחבר מחדש בשקט
 document.addEventListener('click', e => { if (!tok && tc && !e.target.closest('.yt-login-btn') && localStorage.getItem('xf_was')) { silent = true; tc.requestAccessToken({ prompt: '' }); } }, { once: true });
