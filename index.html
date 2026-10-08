@@ -131,6 +131,11 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hi
 #splash .sp-txt{font-size:13px;color:var(--txt3);min-height:18px}
 @keyframes spPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.07);opacity:.75}}
 @keyframes spBar{0%{left:-45%}100%{left:100%}}
+.edbox{margin-bottom:11px}
+.edbox textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:14.5px;line-height:1.6;outline:none;resize:vertical;min-height:84px}
+.edbox textarea:focus{border-color:var(--bg4);box-shadow:0 0 0 4px var(--tint)}
+.edbar{display:flex;gap:8px;justify-content:flex-start;margin-top:8px}
+.edtag{color:var(--txt3)}
 </style>
 </head>
 <body>
@@ -196,6 +201,7 @@ const thumb = u => String(u).replace('/upload/', '/upload/f_auto,q_auto,w_900/')
 const I = {
   heart: '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.7 7.9 3.6 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.3 3.4 4.2 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg>',
   share: '<svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>',
+  pen: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16v4zM13.5 6.5l4 4"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   img: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-9 9"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'
@@ -240,7 +246,7 @@ function initAuth() {
 }
 function signIn() { if (!tc) return toast('טוען את מסך ההתחברות...'); tc.requestAccessToken({ prompt: '' }); }
 function dropSession(keep) {
-  const t = tok; tok = null; me = null; localStorage.removeItem('xf_tok'); if (!keep) localStorage.removeItem('xf_was'); renderAuth();
+  const t = tok; tok = null; me = null; localStorage.removeItem('xf_tok'); localStorage.removeItem('xf_me'); if (!keep) localStorage.removeItem('xf_was'); renderAuth();
   if (!keep && t && window.google && google.accounts) try { google.accounts.oauth2.revoke(t, () => {}); } catch (e) {}
 }
 function signOut() { dropSession(); $('#user-menu').classList.remove('open'); toast('התנתקת'); if (view === 'following' || view === 'liked') go('home'); else render(); }
@@ -260,13 +266,14 @@ async function start() {
   try { st = JSON.parse(localStorage.getItem('xf_tok') || 'null'); } catch (e) {}
   if (st && st.exp > Date.now() + 60000) tok = st.tok;
   else if (localStorage.getItem('xf_was')) { $('#sp-txt').textContent = 'בודק התחברות עם Google…'; await silentLogin(); }
+  if (tok) { try { me = JSON.parse(localStorage.getItem('xf_me') || 'null'); } catch (e) {} renderAuth(); }
   route();
   if (tok) boot(false, true); else mark('auth');
 }
 async function boot(announce, first) {
   if (!first) render();
   try {
-    me = (await api('init')).me; renderAuth(); navOn();
+    me = (await api('init')).me; try { localStorage.setItem('xf_me', JSON.stringify(me)); } catch (e) {} renderAuth(); navOn();
     if (announce) toast('שלום, ' + String(me.name).split(' ')[0]);
     const c = $('#cmp');
     if (c && !c.innerHTML && me && (view !== 'channel' || cuid === me.uid) && view !== 'liked') c.innerHTML = cmpHtml();
@@ -348,8 +355,8 @@ function postHtml(p) {
   const id = x(p.id), u = x(p.uid);
   return `<article class="fpost" data-id="${id}">
     <div class="fp-head"><div class="vav" onclick="go('channel','${u}')">${av(p)}</div>
-      <div class="fp-who"><div class="fp-name" onclick="go('channel','${u}')">${x(p.name)}</div><div class="fp-time">${ago(p.createdAt)}</div></div>
-      ${p.mine ? `<button class="fbtn" onclick="delPost('${id}')" title="מחק" aria-label="מחק">${I.trash}</button>` : ''}</div>
+      <div class="fp-who"><div class="fp-name" onclick="go('channel','${u}')">${x(p.name)}</div><div class="fp-time">${ago(p.createdAt)}${p.editedAt ? ' <span class="edtag">· נערך</span>' : ''}</div></div>
+      ${p.mine ? `<button class="fbtn" onclick="editPost('${id}')" title="ערוך" aria-label="ערוך">${I.pen}</button><button class="fbtn" onclick="delPost('${id}')" title="מחק" aria-label="מחק">${I.trash}</button>` : ''}</div>
     ${p.text ? `<div class="fp-title">${x(p.text)}</div>` : ''}
     ${p.image ? `<div class="fmedia"><img src="${x(thumb(p.image))}" loading="lazy" alt=""></div>` : ''}
     <div class="fp-actions"><button class="fbtn like-btn ${p.liked ? 'on' : ''}" onclick="like('${id}')" title="אהבתי" aria-label="אהבתי">${I.heart}</button><span class="lc">${p.likes || ''}</span><span class="sp"></span>
@@ -385,6 +392,33 @@ async function publish() {
     $('#ct').value = ''; img = ''; $('#cprev').innerHTML = ''; toast('הפוסט פורסם');
   } catch (e) {}
   b.disabled = false;
+}
+function editPost(id) {
+  const p = posts.find(p => p.id === id), el = document.querySelector(`[data-id="${id}"]`);
+  if (!p || !el || el.querySelector('.edbox')) return;
+  const box = document.createElement('div'); box.className = 'edbox';
+  box.innerHTML = `<textarea maxlength="2000"></textarea><div class="edbar"><button class="sbtn sbtn-main" onclick="saveEdit('${id}')">שמור</button><button class="sbtn" onclick="cancelEdit('${id}')">ביטול</button></div>`;
+  const ta = box.querySelector('textarea'); ta.value = p.text || '';
+  const t = el.querySelector('.fp-title');
+  if (t) { t.style.display = 'none'; t.after(box); } else el.querySelector('.fp-head').after(box);
+  ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+function cancelEdit(id) {
+  const el = document.querySelector(`[data-id="${id}"]`); if (!el) return;
+  const b = el.querySelector('.edbox'); if (b) b.remove();
+  const t = el.querySelector('.fp-title'); if (t) t.style.display = '';
+}
+async function saveEdit(id) {
+  const p = posts.find(p => p.id === id), el = document.querySelector(`[data-id="${id}"]`); if (!p || !el) return;
+  const text = el.querySelector('.edbox textarea').value.trim();
+  if (!text && !p.image) return toast('הפוסט לא יכול להיות ריק');
+  if (text === (p.text || '')) return cancelEdit(id);
+  const btn = el.querySelector('.edbar .sbtn-main'); btn.disabled = true;
+  try {
+    const r = await api('edit', { id, text });
+    p.text = r.text; p.editedAt = r.editedAt;
+    el.outerHTML = postHtml(p); toast('הפוסט עודכן');
+  } catch (e) { btn.disabled = false; }
 }
 async function delPost(id) {
   if (!confirm('למחוק את הפוסט?')) return;
@@ -430,7 +464,7 @@ function editProf() {
 async function saveProf() {
   try {
     me = (await api('profile', { name: $('#pn').value, bio: $('#pb').value })).me;
-    $('#pm').classList.remove('open'); renderAuth(); toast('הערוץ עודכן'); render();
+    try { localStorage.setItem('xf_me', JSON.stringify(me)); } catch (e) {} $('#pm').classList.remove('open'); renderAuth(); toast('הערוץ עודכן'); render();
   } catch (e) {}
 }
 
