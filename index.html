@@ -201,28 +201,30 @@ async function api(a, p = {}) {
   let r;
   try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ a, token: tok, ...p }) })).json(); }
   catch (e) { toast('שגיאת רשת, נסה שוב'); throw e; }
-  if (r.error === 'auth') { dropSession(); toast('ההתחברות פגה, התחבר שוב'); throw 0; }
+  if (r.error === 'auth') { dropSession(true); toast('ההתחברות פגה, התחבר שוב'); throw 0; }
   if (r.error) { toast(r.error === 'slow' ? 'רגע, לאט יותר' : 'שגיאה: ' + r.error); throw 0; }
   return r;
 }
 
 /* ============ GOOGLE SIGN-IN ============ */
+let silent = false;
 function initAuth() {
   if (!(window.google && google.accounts && google.accounts.oauth2)) return setTimeout(initAuth, 200);
   tc = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID, scope: SCOPE,
     callback: r => {
-      if (!r || r.error) return toast('ההתחברות עם Google נכשלה או בוטלה');
+      const was = silent; silent = false;
+      if (!r || r.error) return was ? 0 : toast('ההתחברות עם Google נכשלה או בוטלה');
       tok = r.access_token;
-      sessionStorage.setItem('xf_tok', JSON.stringify({ tok, exp: Date.now() + (r.expires_in || 3500) * 1000 }));
-      boot(true);
+      localStorage.setItem('xf_tok', JSON.stringify({ tok, exp: Date.now() + (r.expires_in || 3500) * 1000 })); localStorage.setItem('xf_was', '1');
+      boot(!was);
     }
   });
 }
 function signIn() { if (!tc) return toast('טוען את מסך ההתחברות...'); tc.requestAccessToken({ prompt: '' }); }
-function dropSession() {
-  const t = tok; tok = null; me = null; sessionStorage.removeItem('xf_tok'); renderAuth();
-  if (t && window.google && google.accounts) try { google.accounts.oauth2.revoke(t, () => {}); } catch (e) {}
+function dropSession(keep) {
+  const t = tok; tok = null; me = null; localStorage.removeItem('xf_tok'); if (!keep) localStorage.removeItem('xf_was'); renderAuth();
+  if (!keep && t && window.google && google.accounts) try { google.accounts.oauth2.revoke(t, () => {}); } catch (e) {}
 }
 function signOut() { dropSession(); $('#user-menu').classList.remove('open'); toast('התנתקת'); if (view === 'following' || view === 'liked') go('home'); else render(); }
 async function boot(announce) {
@@ -393,7 +395,9 @@ document.addEventListener('click', e => {
 $('#pm').onclick = e => { if (e.target.id === 'pm') e.target.classList.remove('open'); };
 addEventListener('hashchange', route);
 initAuth(); renderAuth(); route();
-try { const s = JSON.parse(sessionStorage.getItem('xf_tok') || 'null'); if (s && s.exp > Date.now() + 60000) { tok = s.tok; boot(false); } } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem('xf_tok') || 'null'); if (s && s.exp > Date.now() + 60000) { tok = s.tok; boot(false); } } catch (e) {}
+// הטוקן של גוגל פג אחרי שעה: בלחיצה הראשונה בדף מנסים להתחבר מחדש בשקט
+document.addEventListener('click', e => { if (!tok && tc && !e.target.closest('.yt-login-btn') && localStorage.getItem('xf_was')) { silent = true; tc.requestAccessToken({ prompt: '' }); } }, { once: true });
 </script>
 </body>
 </html>
