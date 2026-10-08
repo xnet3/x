@@ -267,22 +267,24 @@ async function render() {
     if (my === rid) drawChans(); return;
   }
   ct.innerHTML = `<div class="feed"><div id="hd"></div><div id="cmp"></div><div id="feed-list"><div class="skel"></div><div class="skel"></div></div><div id="feed-end" class="feed-end"></div></div>`;
+  more(my, true);
   if (view === 'channel') { try { await loadChans(); } catch (e) { return; } if (my !== rid) return; drawHd(); }
   else $('#hd').innerHTML = head(...{ home: ['דף הבית', 'הפוסטים האחרונים מכל הערוצים'], following: ['פיד', 'פוסטים מערוצים שאתה עוקב אחריהם'], liked: ['אהבתי', 'פוסטים שסימנת בלב'] }[view]);
   if (me && (view !== 'channel' || cuid === me.uid) && view !== 'liked') $('#cmp').innerHTML = cmpHtml();
-  more(my, true);
 }
 
 async function more(my, first) {
   if (busy) return; busy = true;
-  const e = $('#feed-end'); if (!first) e.innerHTML = '<div class="feed-spin"></div>';
+  const e = $('#feed-end'), ck = 'xf_c_' + view + (cuid || '') + (me ? me.uid : '');
+  if (!first) e.innerHTML = '<div class="feed-spin"></div>';
+  else try { const c = JSON.parse(localStorage.getItem(ck) || 'null'); if (c && my === rid) { posts = c.posts; $('#feed-list').innerHTML = posts.filter(match).map(postHtml).join(''); } } catch (er) {}
   try {
     const r = await api('feed', { s: view === 'channel' ? 'user' : view, uid: cuid, before: next, limit: 8 });
     if (my !== rid) return;
-    if (first) $('#feed-list').innerHTML = '';
+    if (first) { posts = []; $('#feed-list').innerHTML = ''; try { localStorage.setItem(ck, JSON.stringify({ posts: r.posts })); } catch (er) {} }
     posts.push(...r.posts); next = r.next;
     $('#feed-list').insertAdjacentHTML('beforeend', r.posts.filter(match).map(postHtml).join(''));
-  } catch (err) { if (first && my === rid) $('#feed-list').innerHTML = ''; }
+  } catch (err) { if (first && my === rid && !posts.length) $('#feed-list').innerHTML = ''; }
   busy = false; endState();
 }
 function endState() {
