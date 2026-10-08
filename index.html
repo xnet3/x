@@ -10,7 +10,7 @@
 <style>
 body.light{--bg:#fff;--bg2:#f6f7f9;--bg3:#eceff4;--bg4:#dbe0e8;--txt:#14161b;--txt2:#4c5464;--txt3:#868d9b;--border:#e5e8ee;--shadow:rgba(16,24,40,.12);--surface:#fff;--raised:0 1px 2px rgba(16,24,40,.07);--topbar:rgba(255,255,255,.86);--tint:rgba(0,0,0,.07);--red:#14161b;--red2:#3a3f4a;--onred:#fff}
 body.dark{--bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#262628;--bg4:#3c3c40;--txt:#f2f2f3;--txt2:#a9adb5;--txt3:#76797f;--border:rgba(255,255,255,.09);--shadow:rgba(0,0,0,.55);--surface:#181819;--raised:0 1px 2px rgba(0,0,0,.45);--topbar:rgba(15,15,15,.86);--tint:rgba(255,255,255,.12);--red:#f2f2f3;--red2:#cfd1d6;--onred:#0f0f0f}
-:root{--sw:240px;--sc:72px;--th:56px;--ease:.2s cubic-bezier(.4,0,.2,1);--font:'Rubik',system-ui,-apple-system,'Segoe UI',sans-serif}
+:root{--sw:240px;--sc:72px;--th:76px;--ease:.2s cubic-bezier(.4,0,.2,1);--font:'Rubik',system-ui,-apple-system,'Segoe UI',sans-serif}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 button,input,textarea{font-family:var(--font);color:inherit}
 body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hidden;min-height:100vh;transition:background .2s,color .2s}
@@ -18,7 +18,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hi
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* topbar */
-#topbar{position:fixed;top:0;left:0;right:0;height:var(--th);background:var(--topbar);display:flex;align-items:center;padding:0 16px;gap:10px;z-index:200;border-bottom:1px solid var(--border);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px)}
+#topbar{position:fixed;top:12px;left:0;right:0;margin:0 auto;width:min(1080px,calc(100% - 32px));height:52px;background:var(--topbar);display:flex;align-items:center;padding:0 12px;gap:10px;z-index:200;border:1px solid var(--border);border-radius:999px;box-shadow:0 6px 24px var(--shadow);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px)}
 .tbtn{background:none;border:none;cursor:pointer;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--ease)}
 .tbtn:hover{background:var(--bg3)}
 .tbtn svg{width:22px;height:22px;fill:currentColor}
@@ -49,22 +49,17 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hi
 .um-item:hover{background:var(--bg3)}
 .um-item svg{width:17px;height:17px;fill:currentColor}
 
-/* sidebar */
-#sidebar{position:fixed;top:var(--th);right:0;width:var(--sw);height:calc(100vh - var(--th));background:var(--bg);overflow:hidden auto;padding:10px 0 24px;z-index:100;transition:width var(--ease),transform var(--ease)}
-#sidebar.col{width:var(--sc)}
-.nitem{display:flex;align-items:center;gap:14px;height:40px;padding:0 20px;cursor:pointer;color:var(--txt2);white-space:nowrap;overflow:hidden;border-radius:20px;margin:2px 10px;transition:background var(--ease),color var(--ease)}
+/* sidebar: floating icon rail */
+#sidebar{position:fixed;top:50%;right:16px;transform:translateY(-50%);width:58px;display:flex;flex-direction:column;gap:4px;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:30px;box-shadow:0 6px 24px var(--shadow);z-index:100}
+.nitem{position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;cursor:pointer;color:var(--txt2);transition:background var(--ease),color var(--ease)}
 .nitem:hover{background:var(--bg3);color:var(--txt)}
-.nitem.on{background:var(--tint);color:var(--txt);font-weight:600}
-.nitem.on .ni{color:var(--red)}
-.ni{width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ni svg{width:20px;height:20px;fill:currentColor}
-.nl{font-size:13.5px}
-.sb-div{height:1px;background:var(--border);margin:10px 12px}
-#sidebar.col .nitem{justify-content:center;padding:0;border-radius:50%;width:44px;height:44px;margin-inline:14px 0}
-#sidebar.col .nl{display:none}
-#main{margin:var(--th) var(--sw) 0 0;padding:26px 30px 64px;transition:margin var(--ease);min-height:calc(100vh - var(--th))}
-#main.col{margin-right:var(--sc)}
-@media(max-width:760px){:root{--sw:0px}#sidebar{transform:translateX(100%);width:260px!important;box-shadow:-8px 0 24px var(--shadow)}#sidebar.mobopen{transform:none}#main{margin-right:0!important;padding:16px 16px 48px}}
+.nitem.on{background:var(--red);color:var(--onred)}
+.ni{display:flex}.ni svg{width:20px;height:20px;fill:currentColor}
+.nl{position:absolute;right:calc(100% + 12px);top:50%;transform:translateY(-50%);background:var(--txt);color:var(--bg);font-size:12px;font-weight:500;padding:5px 10px;border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s}
+.nitem:hover .nl{opacity:1}
+.sb-div{height:1px;background:var(--border);margin:4px 8px}
+#main{margin:var(--th) 90px 0 0;padding:26px 30px 64px;min-height:calc(100vh - var(--th))}
+@media(max-width:760px){:root{--th:72px}#sidebar{top:auto;bottom:12px;right:12px;left:12px;transform:none;width:auto;flex-direction:row;justify-content:space-around;padding:6px 10px;border-radius:999px}.nl,.sb-div{display:none}#main{margin-right:0;padding:16px 16px 100px}}
 
 /* feed (נלקח מהפיד של MyTube) */
 .feed{max-width:470px;margin:0 auto}
@@ -133,7 +128,6 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hi
 <script>document.body.className=localStorage.getItem('xf_theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')</script>
 
 <div id="topbar">
-  <button class="tbtn" id="menu-btn" title="תפריט" aria-label="תפריט"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg></button>
   <a id="logo" onclick="go('home')">X<i>feed</i></a>
   <div class="search-wrap"><div class="search-box"><input id="search" placeholder="חיפוש בפוסטים ובערוצים" autocomplete="off" oninput="doSearch(this.value)"></div></div>
   <div class="tb-r">
@@ -156,7 +150,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hi
   <div class="nitem on" data-v="home" onclick="go('home')"><span class="ni"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span><span class="nl">דף הבית</span></div>
   <div class="nitem" data-v="following" onclick="go('following')"><span class="ni"><svg viewBox="0 0 24 24"><path d="M8 8H6v7c0 1.1.9 2 2 2h9v-2H8V8zm12-5h-8c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 8h-8V7h8v4z"/></svg></span><span class="nl">פיד</span></div>
   <div class="nitem" data-v="liked" onclick="go('liked')"><span class="ni"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span><span class="nl">אהבתי</span></div>
-  <div class="nitem" data-v="channels" onclick="go('channels')"><span class="ni"><svg viewBox="0 0 24 24"><path d="M20 8H4V6h16v2zm-2-6H6v2h12V2zm4 10v8c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2zm-6 4l-6-3.27v6.53L16 16z"/></svg></span><span class="nl">ערוצים</span></div>
+  <div class="nitem" data-v="channels" onclick="go('channels')"><span class="ni"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span><span class="nl">ערוצים</span></div>
   <div class="sb-div"></div>
   <div class="nitem" data-v="mine" id="n-mine" style="display:none" onclick="go('channel',me.uid)"><span class="ni"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></span><span class="nl">הערוץ שלי</span></div>
 </div>
@@ -244,7 +238,7 @@ function renderAuth() {
 /* ============ ROUTING ============ */
 function go(v, u) {
   const h = v === 'channel' ? '#/c/' + u : '#/' + v;
-  $('#user-menu').classList.remove('open'); $('#sidebar').classList.remove('mobopen');
+  $('#user-menu').classList.remove('open'); 
   if (location.hash === h) route(); else location.hash = h;
 }
 function route() {
@@ -392,15 +386,9 @@ async function saveProf() {
 }
 
 /* ============ INIT ============ */
-$('#menu-btn').onclick = () => {
-  const sb = $('#sidebar');
-  if (innerWidth <= 760) return sb.classList.toggle('mobopen');
-  $('#main').classList.toggle('col', sb.classList.toggle('col'));
-};
 $('#theme-btn').onclick = () => { document.body.className = document.body.classList.contains('dark') ? 'light' : 'dark'; localStorage.setItem('xf_theme', document.body.className); };
 document.addEventListener('click', e => {
   if (!e.target.closest('#user-menu') && !e.target.closest('#auth-area')) $('#user-menu').classList.remove('open');
-  if (!e.target.closest('#sidebar') && !e.target.closest('#menu-btn') && innerWidth <= 760) $('#sidebar').classList.remove('mobopen');
 });
 $('#pm').onclick = e => { if (e.target.id === 'pm') e.target.classList.remove('open'); };
 addEventListener('hashchange', route);
