@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xfeed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body.light{--bg:#fff;--bg2:#f6f7f9;--bg3:#eceff4;--bg4:#dbe0e8;--txt:#14161b;--txt2:#4c5464;--txt3:#868d9b;--border:#e5e8ee;--shadow:rgba(16,24,40,.12);--surface:#fff;--raised:0 1px 2px rgba(16,24,40,.07);--topbar:rgba(255,255,255,.86);--tint:rgba(0,0,0,.07);--red:#14161b;--red2:#3a3f4a;--onred:#fff}
+body.dark{--bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#262628;--bg4:#3c3c40;--txt:#f2f2f3;--txt2:#a9adb5;--txt3:#76797f;--border:rgba(255,255,255,.09);--shadow:rgba(0,0,0,.55);--surface:#181819;--raised:0 1px 2px rgba(0,0,0,.45);--topbar:rgba(15,15,15,.86);--tint:rgba(255,255,255,.12);--red:#f2f2f3;--red2:#cfd1d6;--onred:#0f0f0f}
+:root{--sw:240px;--sc:72px;--th:56px;--ease:.2s cubic-bezier(.4,0,.2,1);--font:'Rubik',system-ui,-apple-system,'Segoe UI',sans-serif}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+button,input,textarea{font-family:var(--font);color:inherit}
+body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hidden;min-height:100vh;transition:background .2s,color .2s}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px;border-radius:6px}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* topbar */
+#topbar{position:fixed;top:0;left:0;right:0;height:var(--th);background:var(--topbar);display:flex;align-items:center;padding:0 16px;gap:10px;z-index:200;border-bottom:1px solid var(--border);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px)}
+.tbtn{background:none;border:none;cursor:pointer;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--ease)}
+.tbtn:hover{background:var(--bg3)}
+.tbtn svg{width:22px;height:22px;fill:currentColor}
+#logo{font-size:23px;font-weight:800;letter-spacing:-.04em;cursor:pointer;direction:ltr;flex-shrink:0}
+#logo i{font-style:normal;color:var(--txt3)}
+.tb-r{display:flex;align-items:center;gap:10px;margin-inline-start:auto;flex-shrink:0}
+.tb-actions{display:flex;align-items:center;height:40px;padding:3px;border:1px solid var(--border);border-radius:999px;background:var(--bg2)}
+.tb-actions .tbtn{width:32px;height:32px;color:var(--txt2)}
+.tb-actions .tbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.tb-actions .ic-sun{display:none}body.dark .tb-actions .ic-sun{display:block}body.dark .tb-actions .ic-moon{display:none}
+.search-wrap{display:flex;flex:1;max-width:560px;margin:0 24px;min-width:0}
+.search-box{display:flex;align-items:center;flex:1;height:40px;padding:3px 14px;border:1px solid var(--border);border-radius:999px;background:var(--bg2);transition:border-color var(--ease),background var(--ease),box-shadow var(--ease)}
+.search-box:focus-within{background:var(--bg);border-color:var(--bg4);box-shadow:0 0 0 4px var(--tint)}
+.search-box input{flex:1;min-width:0;height:100%;background:transparent;border:none;font-size:14px;outline:none}
+.search-box input::placeholder{color:var(--txt3)}
+@media(max-width:900px){.search-wrap{display:none}}
+.yt-login-btn{height:40px;padding-inline:4px 16px;gap:9px;border-radius:999px;border:none;background:var(--txt);color:var(--bg);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center}
+.yt-login-btn:hover{background:var(--txt2)}
+.g-dot{width:32px;height:32px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.g-dot svg{width:16px;height:16px}
+.yt-user-chip{display:flex;align-items:center;gap:8px;height:40px;padding:3px 3px 3px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:999px;cursor:pointer;transition:background var(--ease)}
+.yt-user-chip:hover{background:var(--bg3)}
+.yt-user-name{font-size:13px;font-weight:500;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:640px){.yt-user-name,.lbl{display:none}.yt-user-chip{padding-left:3px}.yt-login-btn{padding-inline-end:4px}}
+#user-menu{position:fixed;top:calc(var(--th) + 8px);left:12px;width:220px;background:var(--bg2);border:1px solid var(--bg4);border-radius:12px;box-shadow:0 8px 32px var(--shadow);z-index:300;padding:8px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;transform:translateY(-8px)}
+#user-menu.open{opacity:1;pointer-events:all;transform:none}
+.um-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px}
+.um-item:hover{background:var(--bg3)}
+.um-item svg{width:17px;height:17px;fill:currentColor}
+
+/* sidebar */
+#sidebar{position:fixed;top:var(--th);right:0;width:var(--sw);height:calc(100vh - var(--th));background:var(--bg);overflow:hidden auto;padding:10px 0 24px;z-index:100;transition:width var(--ease),transform var(--ease)}
+#sidebar.col{width:var(--sc)}
+.nitem{display:flex;align-items:center;gap:14px;height:40px;padding:0 20px;cursor:pointer;color:var(--txt2);white-space:nowrap;overflow:hidden;border-radius:20px;margin:2px 10px;transition:background var(--ease),color var(--ease)}
+.nitem:hover{background:var(--bg3);color:var(--txt)}
+.nitem.on{background:var(--tint);color:var(--txt);font-weight:600}
+.nitem.on .ni{color:var(--red)}
+.ni{width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ni svg{width:20px;height:20px;fill:currentColor}
+.nl{font-size:13.5px}
+.sb-div{height:1px;background:var(--border);margin:10px 12px}
+#sidebar.col .nitem{justify-content:center;padding:0;border-radius:50%;width:44px;height:44px;margin-inline:14px 0}
+#sidebar.col .nl{display:none}
+#main{margin:var(--th) var(--sw) 0 0;padding:26px 30px 64px;transition:margin var(--ease);min-height:calc(100vh - var(--th))}
+#main.col{margin-right:var(--sc)}
+@media(max-width:760px){:root{--sw:0px}#sidebar{transform:translateX(100%);width:260px!important;box-shadow:-8px 0 24px var(--shadow)}#sidebar.mobopen{transform:none}#main{margin-right:0!important;padding:16px 16px 48px}}
+
+/* feed (נלקח מהפיד של MyTube) */
+.feed{max-width:470px;margin:0 auto}
+.feed-head{margin-bottom:18px;padding:0 4px}
+.feed-head h1{font-size:22px;font-weight:800;letter-spacing:-.4px}
+.feed-head p{font-size:12.5px;color:var(--txt3);margin-top:4px}
+.fpost{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:14px 14px 10px;margin-bottom:14px;box-shadow:var(--raised)}
+.fp-head{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+.vav{width:38px;height:38px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px var(--bg4)}
+.vav img,.yt-user-av{width:100%;height:100%;object-fit:cover}
+.yt-user-chip .vav{width:32px;height:32px;box-shadow:none;cursor:inherit}
+.fp-who{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
+.fp-name{font-size:14px;font-weight:700;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3}
+.fp-name:hover{text-decoration:underline}
+.fp-time{font-size:11.5px;color:var(--txt3)}
+.fp-title{font-size:14.5px;font-weight:500;line-height:1.6;margin-bottom:11px;padding:0 2px;white-space:pre-wrap;overflow-wrap:anywhere}
+.fmedia{position:relative;width:100%;background:var(--bg3);border-radius:16px;overflow:hidden;margin-bottom:2px}
+.fmedia img{width:100%;max-height:560px;object-fit:cover;display:block}
+.fp-actions{display:flex;align-items:center;gap:2px;margin-top:8px}
+.sp{flex:1}
+.lc{font-size:12.5px;color:var(--txt3);min-width:8px}
+.fbtn{width:34px;height:34px;border-radius:50%;background:transparent;color:var(--txt2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s,transform .15s}
+.fbtn:hover{background:var(--bg3);color:var(--txt)}
+.fbtn:active{transform:scale(.88)}
+.fbtn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.like-btn.on{color:var(--red)}.like-btn.on svg{fill:var(--red);stroke:var(--red)}
+.feed-end{text-align:center;color:var(--txt3);font-size:12.5px;padding:16px 0 40px;min-height:60px}
+.feed-spin{width:24px;height:24px;margin:0 auto 8px;border-radius:50%;border:3px solid var(--bg4);border-top-color:var(--red);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.skel{background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 37%,var(--bg3) 63%);background-size:400% 100%;animation:sh 1.4s infinite;border-radius:22px;height:230px;margin-bottom:14px}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:0 0}}
+
+/* composer */
+.cmp textarea{width:100%;background:transparent;border:none;outline:none;resize:none;font-size:14.5px;line-height:1.6;padding:0 2px;margin-bottom:6px}
+.cmp textarea::placeholder{color:var(--txt3)}
+.rm{position:absolute;top:8px;left:8px;width:28px;height:28px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.rm svg{width:14px;height:14px;fill:currentColor}
+.sbtn{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;padding:10px 20px;border-radius:999px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:background var(--ease),transform .15s}
+.sbtn:hover{background:var(--bg3)}.sbtn:active{transform:scale(.98)}.sbtn:disabled{opacity:.5;pointer-events:none}
+.sbtn-main{background:var(--red);border-color:var(--red);color:var(--onred)}.sbtn-main:hover{background:var(--red2)}
+
+/* channels */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;max-width:1000px;margin:0 auto}
+.ccard{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:14px;box-shadow:var(--raised)}
+.cbio{font-size:12.5px;color:var(--txt2);margin-top:4px;overflow-wrap:anywhere}
+.chead{display:flex;align-items:center;gap:16px;margin-bottom:22px;padding:0 4px}
+.chead .vav{width:64px;height:64px;font-size:20px}
+.chead h1{font-size:22px;font-weight:800;letter-spacing:-.4px}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:80px 20px;color:var(--txt2)}
+.empty h3{font-size:17px;font-weight:700;margin-bottom:8px;color:var(--txt)}
+.empty p{font-size:13px;color:var(--txt3);max-width:340px;line-height:1.6;margin-bottom:18px}
+
+/* modal + toast */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal.open{display:flex}
+.mbox{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:22px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px}
+.mbox h3{font-size:17px;font-weight:700}
+.mbox input,.mbox textarea{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:14px;outline:none;resize:none}
+.mbox input:focus,.mbox textarea:focus{border-color:var(--bg4);box-shadow:0 0 0 4px var(--tint)}
+.mrow{display:flex;gap:8px;justify-content:flex-start}
+#toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,20px);background:var(--bg4);color:var(--txt);padding:10px 20px;border-radius:24px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:600;box-shadow:0 4px 20px var(--shadow)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<script>document.body.className=localStorage.getItem('xf_theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')</script>
+
+<div id="topbar">
+  <button class="tbtn" id="menu-btn" title="תפריט" aria-label="תפריט"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg></button>
+  <a id="logo" onclick="go('home')">X<i>feed</i></a>
+  <div class="search-wrap"><div class="search-box"><input id="search" placeholder="חיפוש בפוסטים ובערוצים" autocomplete="off" oninput="doSearch(this.value)"></div></div>
+  <div class="tb-r">
+    <div class="tb-actions">
+      <button class="tbtn" id="theme-btn" title="ערכת נושא" aria-label="ערכת נושא">
+        <svg class="ic-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+    </div>
+    <div id="auth-area"></div>
+    <div id="user-menu">
+      <div class="um-item" onclick="go('channel',me.uid)"><svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 12c-4 0-8 2-8 5v3h16v-3c0-3-4-5-8-5z"/></svg>הערוץ שלי</div>
+      <div class="um-item" onclick="editProf()"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>עריכת הערוץ</div>
+      <div class="um-item" onclick="signOut()"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L17.17 10H9v2h8.17l-1.58 1.59L17 15l4-4zM5 5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h7v-2H5V5z"/></svg>התנתק</div>
+    </div>
+  </div>
+</div>
+
+<div id="sidebar">
+  <div class="nitem on" data-v="home" onclick="go('home')"><span class="ni"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span><span class="nl">דף הבית</span></div>
+  <div class="nitem" data-v="following" onclick="go('following')"><span class="ni"><svg viewBox="0 0 24 24"><path d="M8 8H6v7c0 1.1.9 2 2 2h9v-2H8V8zm12-5h-8c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 8h-8V7h8v4z"/></svg></span><span class="nl">פיד</span></div>
+  <div class="nitem" data-v="liked" onclick="go('liked')"><span class="ni"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span><span class="nl">אהבתי</span></div>
+  <div class="nitem" data-v="channels" onclick="go('channels')"><span class="ni"><svg viewBox="0 0 24 24"><path d="M20 8H4V6h16v2zm-2-6H6v2h12V2zm4 10v8c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2zm-6 4l-6-3.27v6.53L16 16z"/></svg></span><span class="nl">ערוצים</span></div>
+  <div class="sb-div"></div>
+  <div class="nitem" data-v="mine" id="n-mine" style="display:none" onclick="go('channel',me.uid)"><span class="ni"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg></span><span class="nl">הערוץ שלי</span></div>
+</div>
+
+<div id="main"><div id="content"></div></div>
+
+<div class="modal" id="pm"><div class="mbox">
+  <h3>עריכת הערוץ</h3>
+  <input id="pn" maxlength="40" placeholder="שם הערוץ">
+  <textarea id="pb" maxlength="160" rows="3" placeholder="תיאור קצר"></textarea>
+  <div class="mrow"><button class="sbtn sbtn-main" onclick="saveProf()">שמירה</button><button class="sbtn" onclick="$('#pm').classList.remove('open')">ביטול</button></div>
+</div></div>
+<div id="toast"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+/* ============ CONFIG ============ */
+const API = 'https://script.google.com/macros/s/AKfycbwXomzzN8-Mps36nkncrpEFMIcHHdWABATIY7THn2cQ9IpfEslaP_-iKF-lulDVq6Ea/exec';   // ← הדבק כאן את כתובת ה-Web App של האפסקריפט
+const CLIENT_ID = '426523025549-7c50rkn7cun4vmm2r802u0ij6egjehtg.apps.googleusercontent.com';
+const SCOPE = 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
+const CLD = { cloud: 'ioecathc', preset: 'website_upload3' };   // ← Cloudinary: cloud name + unsigned upload preset (בהמשך)
+
+/* ============ HELPERS ============ */
+const $ = s => document.querySelector(s);
+const x = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let _t; function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(_t); _t = setTimeout(() => t.classList.remove('show'), 2600); }
+function ago(ts) {
+  let v = (Date.now() - ts) / 1000, i = 0; const t = [60, 60, 24, 30, 12], n = ['שניות', 'דקות', 'שעות', 'ימים', 'חודשים', 'שנים'];
+  for (; i < t.length; i++) { if (v < t[i]) break; v /= t[i]; }
+  return `לפני ${Math.max(1, Math.floor(v))} ${n[i]}`;
+}
+const thumb = u => String(u).replace('/upload/', '/upload/f_auto,q_auto,w_900/');
+const I = {
+  heart: '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.7 7.9 3.6 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.3 3.4 4.2 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg>',
+  share: '<svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>',
+  trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  img: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-9 9"/></svg>',
+  x: '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'
+};
+const av = u => u && u.picture ? `<img src="${x(u.picture)}" referrerpolicy="no-referrer" alt="">` : x(((u && u.name) || '?').slice(0, 2));
+
+/* ============ STATE ============ */
+let tok = null, me = null, tc = null, view = 'home', cuid = null, posts = [], next = null, busy = false, chans = [], q = '', rid = 0, img = '', io = null;
+
+/* ============ API ============ */
+async function api(a, p = {}) {
+  if (!API) { toast('חסרה כתובת ה-Web App בקבוע API'); throw 0; }
+  let r;
+  try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ a, token: tok, ...p }) })).json(); }
+  catch (e) { toast('שגיאת רשת, נסה שוב'); throw e; }
+  if (r.error === 'auth') { dropSession(); toast('ההתחברות פגה, התחבר שוב'); throw 0; }
+  if (r.error) { toast(r.error === 'slow' ? 'רגע, לאט יותר' : 'שגיאה: ' + r.error); throw 0; }
+  return r;
+}
+
+/* ============ GOOGLE SIGN-IN ============ */
+function initAuth() {
+  if (!(window.google && google.accounts && google.accounts.oauth2)) return setTimeout(initAuth, 200);
+  tc = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID, scope: SCOPE,
+    callback: r => {
+      if (!r || r.error) return toast('ההתחברות עם Google נכשלה או בוטלה');
+      tok = r.access_token;
+      sessionStorage.setItem('xf_tok', JSON.stringify({ tok, exp: Date.now() + (r.expires_in || 3500) * 1000 }));
+      boot(true);
+    }
+  });
+}
+function signIn() { if (!tc) return toast('טוען את מסך ההתחברות...'); tc.requestAccessToken({ prompt: '' }); }
+function dropSession() {
+  const t = tok; tok = null; me = null; sessionStorage.removeItem('xf_tok'); renderAuth();
+  if (t && window.google && google.accounts) try { google.accounts.oauth2.revoke(t, () => {}); } catch (e) {}
+}
+function signOut() { dropSession(); $('#user-menu').classList.remove('open'); toast('התנתקת'); if (view === 'following' || view === 'liked') go('home'); else render(); }
+async function boot(announce) {
+  try { me = (await api('init')).me; renderAuth(); if (announce) toast('שלום, ' + String(me.name).split(' ')[0]); render(); } catch (e) {}
+}
+function renderAuth() {
+  const el = $('#auth-area');
+  $('#n-mine').style.display = me ? '' : 'none';
+  if (me) el.innerHTML = `<div class="yt-user-chip" onclick="event.stopPropagation();$('#user-menu').classList.toggle('open')"><span class="yt-user-name">${x(me.name)}</span><div class="vav">${av(me)}</div></div>`;
+  else el.innerHTML = `<button class="yt-login-btn" onclick="signIn()"><span class="g-dot"><svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09a6.6 6.6 0 0 1 0-4.18V7.07H2.18a11 11 0 0 0 0 9.86l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg></span><span class="lbl">התחבר עם Google</span></button>`;
+}
+
+/* ============ ROUTING ============ */
+function go(v, u) {
+  const h = v === 'channel' ? '#/c/' + u : '#/' + v;
+  $('#user-menu').classList.remove('open'); $('#sidebar').classList.remove('mobopen');
+  if (location.hash === h) route(); else location.hash = h;
+}
+function route() {
+  const m = location.hash.match(/^#\/(\w+)(?:\/(\w+))?/) || [];
+  view = m[1] === 'c' ? 'channel' : ['following', 'liked', 'channels'].includes(m[1]) ? m[1] : 'home';
+  cuid = m[2] || null; q = ''; $('#search').value = '';
+  const mine = view === 'channel' && me && cuid === me.uid;
+  document.querySelectorAll('.nitem').forEach(n => n.classList.toggle('on', mine ? n.dataset.v === 'mine' : n.dataset.v === view));
+  render();
+}
+
+/* ============ RENDER ============ */
+const empty = (h, p, btn) => `<div class="empty"><h3>${h}</h3><p>${p}</p>${btn ? '<button class="sbtn sbtn-main" onclick="signIn()">התחבר עם Google</button>' : ''}</div>`;
+const head = (t, s) => `<div class="feed-head"><h1>${t}</h1><p>${s}</p></div>`;
+const match = p => !q || (p.text + ' ' + p.name).toLowerCase().includes(q);
+
+async function render() {
+  const my = ++rid, ct = $('#content'); posts = []; next = null; busy = false;
+  if (!API) return ct.innerHTML = empty('כמעט מוכן', 'הדבק את כתובת ה-Web App של האפסקריפט בקבוע <b>API</b> בראש הסקריפט בקובץ.');
+  if ((view === 'following' || view === 'liked') && !me) return ct.innerHTML = empty('צריך להתחבר', view === 'liked' ? 'התחבר כדי לראות את הפוסטים שסימנת באהבתי.' : 'התחבר כדי לעקוב אחרי ערוצים ולראות את הפוסטים שלהם כאן.', true);
+  if (view === 'channels') {
+    ct.innerHTML = head('ערוצים', 'גלה ערוצים ועקוב אחריהם') + '<div class="cgrid" id="cg"><div class="skel"></div><div class="skel"></div></div>';
+    try { await loadChans(); } catch (e) { return; }
+    if (my === rid) drawChans(); return;
+  }
+  ct.innerHTML = `<div class="feed"><div id="hd"></div><div id="cmp"></div><div id="feed-list"><div class="skel"></div><div class="skel"></div></div><div id="feed-end" class="feed-end"></div></div>`;
+  if (view === 'channel') { try { await loadChans(); } catch (e) { return; } if (my !== rid) return; drawHd(); }
+  else $('#hd').innerHTML = head(...{ home: ['דף הבית', 'הפוסטים האחרונים מכל הערוצים'], following: ['פיד', 'פוסטים מערוצים שאתה עוקב אחריהם'], liked: ['אהבתי', 'פוסטים שסימנת בלב'] }[view]);
+  if (me && (view !== 'channel' || cuid === me.uid) && view !== 'liked') $('#cmp').innerHTML = cmpHtml();
+  more(my, true);
+}
+
+async function more(my, first) {
+  if (busy) return; busy = true;
+  const e = $('#feed-end'); if (!first) e.innerHTML = '<div class="feed-spin"></div>';
+  try {
+    const r = await api('feed', { s: view === 'channel' ? 'user' : view, uid: cuid, before: next, limit: 8 });
+    if (my !== rid) return;
+    if (first) $('#feed-list').innerHTML = '';
+    posts.push(...r.posts); next = r.next;
+    $('#feed-list').insertAdjacentHTML('beforeend', r.posts.filter(match).map(postHtml).join(''));
+  } catch (err) { if (first && my === rid) $('#feed-list').innerHTML = ''; }
+  busy = false; endState();
+}
+function endState() {
+  const e = $('#feed-end'); if (!e) return;
+  if (io) io.disconnect();
+  if (next) {
+    e.innerHTML = '<div class="feed-spin"></div>';
+    io = new IntersectionObserver(es => { if (es[0].isIntersecting && next && !busy) more(rid); }, { rootMargin: '800px 0px' });
+    io.observe(e);
+  } else e.textContent = posts.length ? 'זה הכל, הגעת לסוף הפיד' : ({ following: 'עדיין אין פוסטים. עקוב אחרי ערוצים כדי למלא את הפיד.', liked: 'עדיין לא סימנת פוסטים באהבתי.' }[view] || 'עדיין אין פוסטים כאן.');
+}
+function relist() { $('#feed-list').innerHTML = posts.filter(match).map(postHtml).join(''); }
+function doSearch(v) { q = v.trim().toLowerCase(); if (view === 'channels') drawChans(); else if ($('#feed-list')) relist(); }
+
+function postHtml(p) {
+  const id = x(p.id), u = x(p.uid);
+  return `<article class="fpost" data-id="${id}">
+    <div class="fp-head"><div class="vav" onclick="go('channel','${u}')">${av(p)}</div>
+      <div class="fp-who"><div class="fp-name" onclick="go('channel','${u}')">${x(p.name)}</div><div class="fp-time">${ago(p.createdAt)}</div></div>
+      ${p.mine ? `<button class="fbtn" onclick="delPost('${id}')" title="מחק" aria-label="מחק">${I.trash}</button>` : ''}</div>
+    ${p.text ? `<div class="fp-title">${x(p.text)}</div>` : ''}
+    ${p.image ? `<div class="fmedia"><img src="${x(thumb(p.image))}" loading="lazy" alt=""></div>` : ''}
+    <div class="fp-actions"><button class="fbtn like-btn ${p.liked ? 'on' : ''}" onclick="like('${id}')" title="אהבתי" aria-label="אהבתי">${I.heart}</button><span class="lc">${p.likes || ''}</span><span class="sp"></span>
+      <button class="fbtn" onclick="share('${u}')" title="העתק קישור לערוץ" aria-label="העתק קישור לערוץ">${I.share}</button></div>
+  </article>`;
+}
+
+/* ============ POSTS / LIKES ============ */
+function cmpHtml() {
+  return `<div class="fpost cmp"><div class="fp-head"><div class="vav">${av(me)}</div><div class="fp-who"><div class="fp-name" style="cursor:default">${x(me.name)}</div></div></div>
+    <textarea id="ct" maxlength="2000" rows="3" placeholder="מה חדש?"></textarea><div id="cprev"></div>
+    <div class="fp-actions"><button class="fbtn" onclick="$('#cf').click()" title="הוסף תמונה" aria-label="הוסף תמונה">${I.img}</button><input type="file" id="cf" accept="image/*" hidden onchange="pickImg(this)"><span class="sp"></span><button class="sbtn sbtn-main" id="cpost" onclick="publish()">פרסם</button></div></div>`;
+}
+async function upImg(f) {
+  const fd = new FormData(); fd.append('file', f); fd.append('upload_preset', CLD.preset);
+  const d = await (await fetch(`https://api.cloudinary.com/v1_1/${CLD.cloud}/image/upload`, { method: 'POST', body: fd })).json();
+  if (!d.secure_url) throw 0; return d.secure_url;
+}
+async function pickImg(i) {
+  const f = i.files[0]; i.value = ''; if (!f) return;
+  if (!CLD.cloud || !CLD.preset) return toast('העלאת תמונות תוגדר בהמשך');
+  $('#cprev').innerHTML = '<div class="feed-spin"></div>';
+  try { img = await upImg(f); $('#cprev').innerHTML = `<div class="fmedia"><img src="${x(thumb(img))}" alt=""><button class="rm" onclick="img='';$('#cprev').innerHTML=''" aria-label="הסר">${I.x}</button></div>`; }
+  catch (e) { $('#cprev').innerHTML = ''; toast('העלאת התמונה נכשלה'); }
+}
+async function publish() {
+  const t = $('#ct').value.trim(); if (!t && !img) return;
+  const b = $('#cpost'); b.disabled = true;
+  try {
+    const r = await api('post', { text: t, image: img });
+    const p = { id: r.id, uid: me.uid, name: me.name, picture: me.picture, text: t, image: img, createdAt: r.createdAt, likes: 0, liked: false, mine: true };
+    posts.unshift(p); $('#feed-list').insertAdjacentHTML('afterbegin', postHtml(p));
+    $('#ct').value = ''; img = ''; $('#cprev').innerHTML = ''; toast('הפוסט פורסם');
+  } catch (e) {}
+  b.disabled = false;
+}
+async function delPost(id) {
+  if (!confirm('למחוק את הפוסט?')) return;
+  try { await api('del', { id }); posts = posts.filter(p => p.id !== id); document.querySelector(`[data-id="${id}"]`).remove(); toast('הפוסט נמחק'); } catch (e) {}
+}
+function upd(p) { const el = document.querySelector(`[data-id="${p.id}"]`); if (!el) return; el.querySelector('.like-btn').classList.toggle('on', p.liked); el.querySelector('.lc').textContent = p.likes || ''; }
+function setLike(p, on) { p.liked = on; p.likes = Math.max(0, (p.likes || 0) + (on ? 1 : -1)); upd(p); }
+async function like(id) {
+  if (!me) return toast('התחבר כדי לסמן אהבתי');
+  const p = posts.find(p => p.id === id), on = !p.liked; setLike(p, on);
+  try { p.likes = (await api('like', { id, on })).likes; upd(p); } catch (e) { setLike(p, !on); }
+}
+function share(u) {
+  const url = location.href.split('#')[0] + '#/c/' + u;
+  try { navigator.clipboard.writeText(url).then(() => toast('הקישור הועתק'), () => toast(url)); } catch (e) { toast(url); }
+}
+
+/* ============ CHANNELS ============ */
+async function loadChans() { chans = (await api('channels')).channels; }
+const folBtn = c => c.uid === (me && me.uid) ? '' : `<button class="sbtn ${c.following ? '' : 'sbtn-main'}" onclick="follow('${x(c.uid)}')">${c.following ? 'עוקב' : 'עקוב'}</button>`;
+const stats = c => `${c.posts} פוסטים · ${c.followers} עוקבים`;
+function drawChans() {
+  const L = chans.filter(c => !q || (c.name + ' ' + c.bio).toLowerCase().includes(q));
+  $('#cg').innerHTML = L.length ? L.map(c => `<div class="ccard"><div class="vav" onclick="go('channel','${x(c.uid)}')">${av(c)}</div>
+    <div class="fp-who"><div class="fp-name" onclick="go('channel','${x(c.uid)}')">${x(c.name)}</div><div class="fp-time">${stats(c)}</div>${c.bio ? `<div class="cbio">${x(c.bio)}</div>` : ''}</div>${folBtn(c)}</div>`).join('') : '<div class="empty" style="grid-column:1/-1"><h3>לא נמצאו ערוצים</h3></div>';
+}
+function drawHd() {
+  const c = chans.find(c => c.uid === cuid);
+  if (!c) return $('#content').innerHTML = empty('הערוץ לא נמצא', 'ייתכן שהקישור שגוי.');
+  $('#hd').innerHTML = `<div class="chead"><div class="vav">${av(c)}</div><div class="fp-who"><h1>${x(c.name)}</h1><div class="fp-time">${stats(c)}</div>${c.bio ? `<div class="cbio">${x(c.bio)}</div>` : ''}</div>${me && c.uid === me.uid ? '<button class="sbtn" onclick="editProf()">עריכה</button>' : folBtn(c)}</div>`;
+}
+async function follow(uid) {
+  if (!me) return toast('התחבר כדי לעקוב אחרי ערוצים');
+  const c = chans.find(c => c.uid === uid), on = !c.following;
+  c.following = on; c.followers += on ? 1 : -1; view === 'channels' ? drawChans() : drawHd();
+  try { await api('follow', { uid, on }); } catch (e) { c.following = !on; c.followers += on ? -1 : 1; view === 'channels' ? drawChans() : drawHd(); }
+}
+function editProf() {
+  $('#user-menu').classList.remove('open');
+  const c = chans.find(c => c.uid === me.uid) || me;
+  $('#pn').value = me.name; $('#pb').value = c.bio || ''; $('#pm').classList.add('open');
+}
+async function saveProf() {
+  try {
+    me = (await api('profile', { name: $('#pn').value, bio: $('#pb').value })).me;
+    $('#pm').classList.remove('open'); renderAuth(); toast('הערוץ עודכן'); render();
+  } catch (e) {}
+}
+
+/* ============ INIT ============ */
+$('#menu-btn').onclick = () => {
+  const sb = $('#sidebar');
+  if (innerWidth <= 760) return sb.classList.toggle('mobopen');
+  $('#main').classList.toggle('col', sb.classList.toggle('col'));
+};
+$('#theme-btn').onclick = () => { document.body.className = document.body.classList.contains('dark') ? 'light' : 'dark'; localStorage.setItem('xf_theme', document.body.className); };
+document.addEventListener('click', e => {
+  if (!e.target.closest('#user-menu') && !e.target.closest('#auth-area')) $('#user-menu').classList.remove('open');
+  if (!e.target.closest('#sidebar') && !e.target.closest('#menu-btn') && innerWidth <= 760) $('#sidebar').classList.remove('mobopen');
+});
+$('#pm').onclick = e => { if (e.target.id === 'pm') e.target.classList.remove('open'); };
+addEventListener('hashchange', route);
+initAuth(); renderAuth(); route();
+try { const s = JSON.parse(sessionStorage.getItem('xf_tok') || 'null'); if (s && s.exp > Date.now() + 60000) { tok = s.tok; boot(false); } } catch (e) {}
+</script>
+</body>
+</html>
