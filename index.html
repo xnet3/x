@@ -122,10 +122,20 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hi
 .mrow{display:flex;gap:8px;justify-content:flex-start}
 #toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,20px);background:var(--bg4);color:var(--txt);padding:10px 20px;border-radius:24px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:600;box-shadow:0 4px 20px var(--shadow)}
 #toast.show{opacity:1;transform:translate(-50%,0)}
+#splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .35s,visibility .35s}
+#splash.out{opacity:0;visibility:hidden;pointer-events:none}
+#splash .sp-logo{font-size:46px;font-weight:700;letter-spacing:-1px;color:var(--txt);animation:spPulse 1.4s ease-in-out infinite}
+#splash .sp-logo i{font-style:normal;color:var(--red)}
+#splash .sp-bar{width:150px;height:4px;border-radius:4px;background:var(--bg3);overflow:hidden;position:relative}
+#splash .sp-bar::after{content:'';position:absolute;top:0;bottom:0;width:45%;border-radius:4px;background:var(--red);animation:spBar 1.1s ease-in-out infinite}
+#splash .sp-txt{font-size:13px;color:var(--txt3);min-height:18px}
+@keyframes spPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.07);opacity:.75}}
+@keyframes spBar{0%{left:-45%}100%{left:100%}}
 </style>
 </head>
 <body>
 <script>document.body.className=localStorage.getItem('xf_theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')</script>
+<div id="splash"><div class="sp-logo">X<i>feed</i></div><div class="sp-bar"></div><div class="sp-txt" id="sp-txt">טוען…</div></div>
 
 <div id="topbar">
   <a id="logo" onclick="go('home')">X<i>feed</i></a>
@@ -194,6 +204,10 @@ const av = u => u && u.picture ? `<img src="${x(u.picture)}" referrerpolicy="no-
 
 /* ============ STATE ============ */
 let tok = null, me = null, tc = null, view = 'home', cuid = null, posts = [], next = null, busy = false, chans = [], q = '', rid = 0, img = '', io = null;
+const rdy = { feed: false, auth: false };
+function hideSplash() { const e = $('#splash'); if (e) { e.classList.add('out'); setTimeout(() => e.remove(), 500); } }
+function mark(k) { rdy[k] = true; if (rdy.feed && rdy.auth) hideSplash(); }
+setTimeout(hideSplash, 9000);   // רשת ביטחון
 
 /* ============ API ============ */
 async function api(a, p = {}) {
@@ -207,18 +221,21 @@ async function api(a, p = {}) {
 }
 
 /* ============ GOOGLE SIGN-IN ============ */
-let silent = false;
+let silent = false, onTok = null;
 function initAuth() {
   if (!(window.google && google.accounts && google.accounts.oauth2)) return setTimeout(initAuth, 200);
   tc = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID, scope: SCOPE,
     callback: r => {
       const was = silent; silent = false;
-      if (!r || r.error) return was ? 0 : toast('ההתחברות עם Google נכשלה או בוטלה');
+      const w = onTok; onTok = null;
+      if (!r || r.error) { if (w) w(false); return was ? 0 : toast('ההתחברות עם Google נכשלה או בוטלה'); }
       tok = r.access_token;
       localStorage.setItem('xf_tok', JSON.stringify({ tok, exp: Date.now() + (r.expires_in || 3500) * 1000 })); localStorage.setItem('xf_was', '1');
+      if (w) return w(true);
       boot(!was);
-    }
+    },
+    error_callback: () => { silent = false; const w = onTok; onTok = null; if (w) w(false); }
   });
 }
 function signIn() { if (!tc) return toast('טוען את מסך ההתחברות...'); tc.requestAccessToken({ prompt: '' }); }
@@ -227,8 +244,35 @@ function dropSession(keep) {
   if (!keep && t && window.google && google.accounts) try { google.accounts.oauth2.revoke(t, () => {}); } catch (e) {}
 }
 function signOut() { dropSession(); $('#user-menu').classList.remove('open'); toast('התנתקת'); if (view === 'following' || view === 'liked') go('home'); else render(); }
-async function boot(announce) {
-  try { me = (await api('init')).me; renderAuth(); if (announce) toast('שלום, ' + String(me.name).split(' ')[0]); render(); } catch (e) {}
+function silentLogin() {
+  return new Promise(res => {
+    const t0 = Date.now();
+    const go = () => {
+      if (tc) { silent = true; onTok = res; try { tc.requestAccessToken({ prompt: '' }); } catch (e) { onTok = null; silent = false; res(false); } }
+      else if (Date.now() - t0 > 3000) res(false); else setTimeout(go, 100);
+    };
+    go(); setTimeout(() => { onTok = null; res(false); }, 5000);
+  });
+}
+async function start() {
+  try { Object.keys(localStorage).forEach(k => { if (k.startsWith('xf_c_')) localStorage.removeItem(k); }); } catch (e) {}
+  let st = null;
+  try { st = JSON.parse(localStorage.getItem('xf_tok') || 'null'); } catch (e) {}
+  if (st && st.exp > Date.now() + 60000) tok = st.tok;
+  else if (localStorage.getItem('xf_was')) { $('#sp-txt').textContent = 'בודק התחברות עם Google…'; await silentLogin(); }
+  route();
+  if (tok) boot(false, true); else mark('auth');
+}
+async function boot(announce, first) {
+  if (!first) render();
+  try {
+    me = (await api('init')).me; renderAuth(); navOn();
+    if (announce) toast('שלום, ' + String(me.name).split(' ')[0]);
+    const c = $('#cmp');
+    if (c && !c.innerHTML && me && (view !== 'channel' || cuid === me.uid) && view !== 'liked') c.innerHTML = cmpHtml();
+    if (view === 'channel' && $('#hd') && chans.some(c => c.uid === cuid)) drawHd();
+  } catch (e) {}
+  if (first) mark('auth');
 }
 function renderAuth() {
   const el = $('#auth-area');
@@ -247,9 +291,11 @@ function route() {
   const m = location.hash.match(/^#\/(\w+)(?:\/(\w+))?/) || [];
   view = m[1] === 'c' ? 'channel' : ['following', 'liked', 'channels'].includes(m[1]) ? m[1] : 'home';
   cuid = m[2] || null; q = ''; $('#search').value = '';
+  navOn(); render();
+}
+function navOn() {
   const mine = view === 'channel' && me && cuid === me.uid;
   document.querySelectorAll('.nitem').forEach(n => n.classList.toggle('on', mine ? n.dataset.v === 'mine' : n.dataset.v === view));
-  render();
 }
 
 /* ============ RENDER ============ */
@@ -259,33 +305,32 @@ const match = p => !q || (p.text + ' ' + p.name).toLowerCase().includes(q);
 
 async function render() {
   const my = ++rid, ct = $('#content'); posts = []; next = null; busy = false;
-  if (!API) return ct.innerHTML = empty('כמעט מוכן', 'הדבק את כתובת ה-Web App של האפסקריפט בקבוע <b>API</b> בראש הסקריפט בקובץ.');
-  if ((view === 'following' || view === 'liked') && !me) return ct.innerHTML = empty('צריך להתחבר', view === 'liked' ? 'התחבר כדי לראות את הפוסטים שסימנת באהבתי.' : 'התחבר כדי לעקוב אחרי ערוצים ולראות את הפוסטים שלהם כאן.', true);
+  if (!API) return mark('feed'), ct.innerHTML = empty('כמעט מוכן', 'הדבק את כתובת ה-Web App של האפסקריפט בקבוע <b>API</b> בראש הסקריפט בקובץ.');
+  if ((view === 'following' || view === 'liked') && !tok) return mark('feed'), ct.innerHTML = empty('צריך להתחבר', view === 'liked' ? 'התחבר כדי לראות את הפוסטים שסימנת באהבתי.' : 'התחבר כדי לעקוב אחרי ערוצים ולראות את הפוסטים שלהם כאן.', true);
   if (view === 'channels') {
     ct.innerHTML = head('ערוצים', 'גלה ערוצים ועקוב אחריהם') + '<div class="cgrid" id="cg"><div class="skel"></div><div class="skel"></div></div>';
-    try { await loadChans(); } catch (e) { return; }
-    if (my === rid) drawChans(); return;
+    try { await loadChans(); } catch (e) { mark('feed'); return; }
+    if (my === rid) drawChans(); mark('feed'); return;
   }
   ct.innerHTML = `<div class="feed"><div id="hd"></div><div id="cmp"></div><div id="feed-list"><div class="skel"></div><div class="skel"></div></div><div id="feed-end" class="feed-end"></div></div>`;
   more(my, true);
-  if (view === 'channel') { try { await loadChans(); } catch (e) { return; } if (my !== rid) return; drawHd(); }
+  if (view === 'channel') { try { await loadChans(); } catch (e) { mark('feed'); return; } if (my !== rid) return; drawHd(); }
   else $('#hd').innerHTML = head(...{ home: ['דף הבית', 'הפוסטים האחרונים מכל הערוצים'], following: ['פיד', 'פוסטים מערוצים שאתה עוקב אחריהם'], liked: ['אהבתי', 'פוסטים שסימנת בלב'] }[view]);
   if (me && (view !== 'channel' || cuid === me.uid) && view !== 'liked') $('#cmp').innerHTML = cmpHtml();
 }
 
 async function more(my, first) {
   if (busy) return; busy = true;
-  const e = $('#feed-end'), ck = 'xf_c_' + view + (cuid || '') + (me ? me.uid : '');
+  const e = $('#feed-end');
   if (!first) e.innerHTML = '<div class="feed-spin"></div>';
-  else try { const c = JSON.parse(localStorage.getItem(ck) || 'null'); if (c && my === rid) { posts = c.posts; $('#feed-list').innerHTML = posts.filter(match).map(postHtml).join(''); } } catch (er) {}
   try {
     const r = await api('feed', { s: view === 'channel' ? 'user' : view, uid: cuid, before: next, limit: 8 });
-    if (my !== rid) return;
-    if (first) { posts = []; $('#feed-list').innerHTML = ''; try { localStorage.setItem(ck, JSON.stringify({ posts: r.posts })); } catch (er) {} }
+    if (my !== rid) { if (first) mark('feed'); return; }
+    if (first) { posts = []; $('#feed-list').innerHTML = ''; }
     posts.push(...r.posts); next = r.next;
     $('#feed-list').insertAdjacentHTML('beforeend', r.posts.filter(match).map(postHtml).join(''));
   } catch (err) { if (first && my === rid && !posts.length) $('#feed-list').innerHTML = ''; }
-  busy = false; endState();
+  busy = false; endState(); if (first) mark('feed');
 }
 function endState() {
   const e = $('#feed-end'); if (!e) return;
@@ -396,8 +441,7 @@ document.addEventListener('click', e => {
 });
 $('#pm').onclick = e => { if (e.target.id === 'pm') e.target.classList.remove('open'); };
 addEventListener('hashchange', route);
-initAuth(); renderAuth(); route();
-try { const s = JSON.parse(localStorage.getItem('xf_tok') || 'null'); if (s && s.exp > Date.now() + 60000) { tok = s.tok; boot(false); } } catch (e) {}
+initAuth(); renderAuth(); start();
 // הטוקן של גוגל פג אחרי שעה: בלחיצה הראשונה בדף מנסים להתחבר מחדש בשקט
 document.addEventListener('click', e => { if (!tok && tc && !e.target.closest('.yt-login-btn') && localStorage.getItem('xf_was')) { silent = true; tc.requestAccessToken({ prompt: '' }); } }, { once: true });
 </script>
