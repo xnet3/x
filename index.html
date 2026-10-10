@@ -189,6 +189,26 @@ body.light .hero-bg i{opacity:.28}
 .fpost.flash{animation:flash 1.5s}
 @keyframes flash{0%,60%{box-shadow:0 0 0 3px var(--txt)}100%{box-shadow:var(--raised)}}
 @media(max-width:640px){.hero{padding:32px 20px 20px;border-radius:26px}}
+
+/* post tools + video */
+.fmtb{display:inline-flex;align-items:center;gap:1px;margin-inline-start:4px;padding-inline-start:6px;border-inline-start:1px solid var(--border)}
+.fbtn.tx{font-size:14px;font-weight:700;font-family:var(--font)}
+.vrow{margin:0 0 8px}
+.vrow input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:9px 14px;font-size:13.5px;outline:none}
+.vrow input:focus{border-color:var(--bg4);box-shadow:0 0 0 4px var(--tint)}
+.vhint{font-size:11.5px;color:var(--txt3);margin:5px 4px 0;min-height:14px}.vhint.ok{color:#22a559}.vhint.bad{color:#e5484d}
+.edbar .sp{flex:1}
+.vid{aspect-ratio:16/9;background:#000;margin-top:8px}
+.vid iframe,.vid video{width:100%;height:100%;border:0;display:block}
+.vph{cursor:pointer;display:flex;align-items:center;justify-content:center}
+.vph.drive{background:linear-gradient(135deg,#1f2937,#111827)}
+.vph img{width:100%;height:100%;max-height:none;object-fit:cover;opacity:.92;transition:opacity .2s,transform .3s}
+.vph:hover img{opacity:1;transform:scale(1.03)}
+.vplay{position:absolute;width:62px;height:62px;border-radius:50%;border:none;background:rgba(0,0,0,.68);color:#fff;display:flex;align-items:center;justify-content:center;pointer-events:none;backdrop-filter:blur(4px)}
+.vplay svg{width:28px;height:28px}
+.vtag{position:absolute;bottom:10px;right:12px;font-size:11.5px;color:#cbd5e1}
+.vlink{display:block;margin:6px 2px 4px;font-size:13px;color:var(--txt2);overflow-wrap:anywhere;direction:ltr;text-align:left}
+.fp-title a{color:inherit;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -265,6 +285,8 @@ const I = {
   copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>',
   trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   img: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-9 9"/></svg>',
+  video: '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="3"/><path d="m16 10 5-3v10l-5-3"/></svg>',
+  play: '<svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M8 5v14l11-7z"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'
 };
 const av = u => u && u.picture ? `<img src="${x(u.picture)}" referrerpolicy="no-referrer" alt="">` : x(((u && u.name) || '?').slice(0, 2));
@@ -444,18 +466,81 @@ function postHtml(p) {
     <div class="fp-head"><div class="vav" onclick="go('channel','${u}')">${av(p)}</div>
       <div class="fp-who"><div class="fp-name" onclick="go('channel','${u}')">${x(p.name)}</div><div class="fp-time">${ago(p.createdAt)}${p.editedAt ? ' <span class="edtag">· נערך</span>' : ''}</div></div>
       ${(p.text || p.can) ? `<div class="pm-wrap"><button class="fbtn" onclick="pmenu(event,'${id}')" title="אפשרויות" aria-label="אפשרויות">${I.dots}</button><div class="pmenu">${p.text ? `<button onclick="copyPost('${id}')">${I.copy}<span>העתק טקסט</span></button>` : ''}${p.can ? `<button onclick="editPost('${id}')">${I.pen}<span>ערוך</span></button><button class="danger" onclick="delPost('${id}')">${I.trash}<span>מחק</span></button>` : ''}</div></div>` : ''}</div>
-    ${p.text ? `<div class="fp-title">${x(p.text)}</div>` : ''}
+    ${p.text ? `<div class="fp-title">${fmt(p.text)}</div>` : ''}
     ${p.image ? `<div class="fmedia"><img src="${x(thumb(p.image))}" loading="lazy" alt=""></div>` : ''}
+    ${p.video ? vidHtml(p.video) : ''}
     <div class="fp-actions"><button class="fbtn like-btn ${p.liked ? 'on' : ''}" onclick="like('${id}')" title="אהבתי" aria-label="אהבתי">${I.heart}</button><span class="lc">${p.likes || ''}</span><span class="sp"></span>
       <button class="fbtn" onclick="share('${u}')" title="העתק קישור לערוץ" aria-label="העתק קישור לערוץ">${I.share}</button></div>
   </article>`;
 }
 
+/* ============ TEXT FORMAT + VIDEO ============ */
+/* עיצוב בסגנון וואטסאפ: *מודגש*  _נטוי_  ~קו חוצה~  וקישורים נלחצים */
+function fmt(t) {
+  const L = [];
+  let s = x(t).replace(/https?:\/\/(?:(?!&lt;|&gt;|&quot;)\S)+/g, u => {
+    const m = u.match(/[.,!?;:)]+$/), tail = m ? m[0] : '', core = tail ? u.slice(0, -tail.length) : u;
+    L.push(core); return '\u0000' + (L.length - 1) + '\u0000' + tail;
+  });
+  const E = '(?=$|[\\s.,!?:;)\\u0000])';
+  s = s.replace(new RegExp('(^|[\\s(])\\*([^*\\n]+?)\\*' + E, 'g'), '$1<b>$2</b>')
+       .replace(new RegExp('(^|[\\s(])_([^_\\n]+?)_' + E, 'g'), '$1<i>$2</i>')
+       .replace(new RegExp('(^|[\\s(])~([^~\\n]+?)~' + E, 'g'), '$1<s>$2</s>');
+  return s.replace(/\u0000(\d+)\u0000/g, (m, i) => `<a href="${L[i]}" target="_blank" rel="noopener noreferrer nofollow">${L[i]}</a>`);
+}
+function wrapSel(btn, m) {
+  const ta = btn.closest('.cmp,.edbox').querySelector('textarea'), v = ta.value, a = ta.selectionStart, b = ta.selectionEnd;
+  if (a === b) { ta.value = v.slice(0, a) + m + m + v.slice(b); ta.setSelectionRange(a + 1, a + 1); }
+  else if (v[a - 1] === m && v[b] === m) { ta.value = v.slice(0, a - 1) + v.slice(a, b) + v.slice(b + 1); ta.setSelectionRange(a - 1, b - 1); }
+  else { ta.value = v.slice(0, a) + m + v.slice(a, b) + m + v.slice(b); ta.setSelectionRange(a + 1, b + 1); }
+  ta.focus();
+}
+const fmtBar = () => `<span class="fmtb"><button type="button" class="fbtn tx" onmousedown="event.preventDefault()" onclick="wrapSel(this,'*')" title="מודגש" aria-label="מודגש">B</button><button type="button" class="fbtn tx" style="font-style:italic" onmousedown="event.preventDefault()" onclick="wrapSel(this,'_')" title="נטוי" aria-label="נטוי">I</button><button type="button" class="fbtn tx" style="text-decoration:line-through" onmousedown="event.preventDefault()" onclick="wrapSel(this,'~')" title="קו חוצה" aria-label="קו חוצה">S</button></span>`;
+function vidInfo(u) {
+  let U; try { U = new URL(u); } catch (e) { return null; }
+  if (U.protocol !== 'https:') return null;
+  const h = U.hostname.replace(/^(www\.|m\.)/, ''); let m;
+  if (h === 'youtu.be') { m = U.pathname.match(/^\/([\w-]{11})/); if (m) return { t: 'yt', id: m[1] }; }
+  if (h === 'youtube.com' || h === 'music.youtube.com') {
+    m = U.pathname.match(/^\/(?:shorts|embed|live)\/([\w-]{11})/); if (m) return { t: 'yt', id: m[1] };
+    const v = U.searchParams.get('v'); if (U.pathname === '/watch' && v && /^[\w-]{11}$/.test(v)) return { t: 'yt', id: v };
+  }
+  if (h === 'drive.google.com') {
+    m = U.pathname.match(/^\/file\/(?:u\/\d+\/)?d\/([\w-]+)/);
+    const id = m ? m[1] : (U.pathname === '/open' || U.pathname === '/uc') ? U.searchParams.get('id') : null;
+    if (id && /^[\w-]+$/.test(id)) return { t: 'drive', id };
+  }
+  if (/\.(mp4|webm)$/i.test(U.pathname)) return { t: 'mp4', u: U.href };
+  return null;
+}
+function vidHtml(u) {
+  const v = vidInfo(u);
+  if (!v) return `<a class="vlink" href="${x(u)}" target="_blank" rel="noopener noreferrer nofollow">${x(u)}</a>`;
+  if (v.t === 'mp4') return `<div class="fmedia vid"><video controls preload="metadata" playsinline src="${x(v.u)}"></video></div>`;
+  return `<div class="fmedia vid vph ${v.t}" data-t="${v.t}" data-id="${x(v.id)}" onclick="playVid(this)">${v.t === 'yt' ? `<img src="https://i.ytimg.com/vi/${x(v.id)}/hqdefault.jpg" loading="lazy" alt="">` : '<span class="vtag">Google Drive</span>'}<button class="vplay" aria-label="נגן סרטון">${I.play}</button></div>`;
+}
+function playVid(el) {
+  const t = el.dataset.t, id = el.dataset.id;
+  const src = t === 'yt' ? `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0` : `https://drive.google.com/file/d/${id}/preview`;
+  el.classList.remove('vph'); el.onclick = null;
+  el.innerHTML = `<iframe src="${src}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+}
+function vidCheck(i) {
+  const h = i.parentElement.querySelector('.vhint'), v = i.value.trim();
+  if (!v) { h.textContent = ''; h.className = 'vhint'; return; }
+  const r = vidInfo(v);
+  h.textContent = r ? '✓ ' + { yt: 'סרטון YouTube', drive: 'סרטון Google Drive (יש לשתף את הקובץ "לכל מי שיש לו קישור")', mp4: 'קובץ וידאו' }[r.t] : 'הקישור לא נתמך (YouTube, Google Drive או קובץ mp4)';
+  h.className = 'vhint ' + (r ? 'ok' : 'bad');
+}
+function toggleVid() { const r = $('#cvrow'); r.hidden = !r.hidden; if (!r.hidden) $('#cv').focus(); }
+const VID_ERR = 'קישור הסרטון לא נתמך. אפשר YouTube, Google Drive או קובץ mp4';
+
 /* ============ POSTS / LIKES ============ */
 function cmpHtml() {
   return `<div class="fpost cmp"><div class="fp-head"><div class="vav">${av(me)}</div><div class="fp-who"><div class="fp-name" style="cursor:default">${x(me.name)}</div></div></div>
-    <textarea id="ct" maxlength="2000" rows="3" placeholder="מה חדש?"></textarea><div id="cprev"></div>
-    <div class="fp-actions"><button class="fbtn" onclick="$('#cf').click()" title="הוסף תמונה" aria-label="הוסף תמונה">${I.img}</button><input type="file" id="cf" accept="image/*" hidden onchange="pickImg(this)"><span class="sp"></span><button class="sbtn sbtn-main" id="cpost" onclick="publish()">פרסם</button></div></div>`;
+    <textarea id="ct" maxlength="2000" rows="3" placeholder="מה חדש?"></textarea>
+    <div id="cvrow" class="vrow" hidden><input id="cv" dir="auto" maxlength="500" placeholder="קישור לסרטון: YouTube / Google Drive / קובץ mp4" oninput="vidCheck(this)" autocomplete="off"><div class="vhint"></div></div><div id="cprev"></div>
+    <div class="fp-actions"><button class="fbtn" onclick="$('#cf').click()" title="הוסף תמונה" aria-label="הוסף תמונה">${I.img}</button><input type="file" id="cf" accept="image/*" hidden onchange="pickImg(this)"><button class="fbtn" onclick="toggleVid()" title="הוסף סרטון" aria-label="הוסף סרטון">${I.video}</button>${fmtBar()}<span class="sp"></span><button class="sbtn sbtn-main" id="cpost" onclick="publish()">פרסם</button></div></div>`;
 }
 async function upImg(f) {
   const fd = new FormData(); fd.append('file', f); fd.append('upload_preset', CLD.preset);
@@ -470,13 +555,14 @@ async function pickImg(i) {
   catch (e) { $('#cprev').innerHTML = ''; toast('העלאת התמונה נכשלה'); }
 }
 async function publish() {
-  const t = $('#ct').value.trim(); if (!t && !img) return;
+  const t = $('#ct').value.trim(), v = $('#cv').value.trim(); if (!t && !img && !v) return;
+  if (v && !vidInfo(v)) return toast(VID_ERR);
   const b = $('#cpost'); b.disabled = true;
   try {
-    const r = await api('post', { text: t, image: img });
-    const p = { id: r.id, uid: me.uid, name: me.name, picture: me.picture, text: t, image: img, createdAt: r.createdAt, likes: 0, liked: false, mine: true, can: true };
+    const r = await api('post', { text: t, image: img, video: v });
+    const p = { id: r.id, uid: me.uid, name: me.name, picture: me.picture, text: t, image: img, video: v, createdAt: r.createdAt, likes: 0, liked: false, mine: true, can: true };
     posts.unshift(p); $('#feed-list').insertAdjacentHTML('afterbegin', postHtml(p));
-    $('#ct').value = ''; img = ''; $('#cprev').innerHTML = ''; toast('הפוסט פורסם');
+    $('#ct').value = ''; img = ''; $('#cv').value = ''; $('#cvrow').hidden = true; $('#cprev').innerHTML = ''; toast('הפוסט פורסם');
   } catch (e) {}
   b.disabled = false;
 }
@@ -498,8 +584,9 @@ function editPost(id) {
   const p = posts.find(p => p.id === id), el = document.querySelector(`[data-id="${id}"]`);
   if (!p || !el || el.querySelector('.edbox')) return;
   const box = document.createElement('div'); box.className = 'edbox';
-  box.innerHTML = `<textarea maxlength="2000"></textarea><div class="edbar"><button class="sbtn sbtn-main" onclick="saveEdit('${id}')">שמור</button><button class="sbtn" onclick="cancelEdit('${id}')">ביטול</button></div>`;
+  box.innerHTML = `<textarea maxlength="2000"></textarea><div class="vrow" style="margin-top:8px"><input class="edv" dir="auto" maxlength="500" placeholder="קישור לסרטון (אופציונלי): YouTube / Google Drive / mp4" oninput="vidCheck(this)" autocomplete="off"><div class="vhint"></div></div><div class="edbar">${fmtBar()}<span class="sp"></span><button class="sbtn sbtn-main" onclick="saveEdit('${id}')">שמור</button><button class="sbtn" onclick="cancelEdit('${id}')">ביטול</button></div>`;
   const ta = box.querySelector('textarea'); ta.value = p.text || '';
+  const ev = box.querySelector('.edv'); ev.value = p.video || '';
   const t = el.querySelector('.fp-title');
   if (t) { t.style.display = 'none'; t.after(box); } else el.querySelector('.fp-head').after(box);
   ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
@@ -511,13 +598,14 @@ function cancelEdit(id) {
 }
 async function saveEdit(id) {
   const p = posts.find(p => p.id === id), el = document.querySelector(`[data-id="${id}"]`); if (!p || !el) return;
-  const text = el.querySelector('.edbox textarea').value.trim();
-  if (!text && !p.image) return toast('הפוסט לא יכול להיות ריק');
-  if (text === (p.text || '')) return cancelEdit(id);
+  const text = el.querySelector('.edbox textarea').value.trim(), v = el.querySelector('.edv').value.trim();
+  if (!text && !p.image && !v) return toast('הפוסט לא יכול להיות ריק');
+  if (v && !vidInfo(v)) return toast(VID_ERR);
+  if (text === (p.text || '') && v === (p.video || '')) return cancelEdit(id);
   const btn = el.querySelector('.edbar .sbtn-main'); btn.disabled = true;
   try {
-    const r = await api('edit', { id, text });
-    p.text = r.text; p.editedAt = r.editedAt;
+    const r = await api('edit', { id, text, video: v });
+    p.text = r.text; p.video = r.video !== undefined ? r.video : v; p.editedAt = r.editedAt;
     el.outerHTML = postHtml(p); toast('הפוסט עודכן');
   } catch (e) { btn.disabled = false; }
 }
@@ -582,7 +670,7 @@ function heroHtml() {
 function drawHero() {
   const e = $('#hmain'); if (!e) return;
   const n = me ? x(String(me.name).split(' ')[0]) : '';
-  e.innerHTML = `<div class="hpill"><span class="hdot"></span>הקהילה פעילה עכשיו</div>
+  e.innerHTML = `<div class="hpill"><span class="hdot"></span>הפלטפורמה פעילה</div>
     <h1>${me ? `${greet()}, <em>${n}</em>` : 'כל מה שחדש,<br><em>במקום אחד</em>'}</h1>
     <p class="hsub">${me ? 'מה בא לך לשתף היום? כתוב פוסט, גלה ערוצים חדשים ותראה מה קורה אצל מי שאתה עוקב אחריו.' : 'שתף רגעים, עקוב אחרי ערוצים שאתה אוהב וגלה אנשים חדשים. התחברות אחת עם Google, וזהו.'}</p>
     <div class="hcta">${me ? '<button class="sbtn sbtn-main" onclick="focusCmp()">כתוב פוסט</button>' : '<button class="sbtn sbtn-main" onclick="signIn()">התחבר עם Google</button>'}<button class="sbtn" onclick="go('channels')">גלה ערוצים</button></div>`;
