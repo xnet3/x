@@ -517,7 +517,13 @@ function vidHtml(u) {
   const v = vidInfo(u);
   if (!v) return `<a class="vlink" href="${x(u)}" target="_blank" rel="noopener noreferrer nofollow">${x(u)}</a>`;
   if (v.t === 'mp4') return `<div class="fmedia vid"><video controls preload="metadata" playsinline src="${x(v.u)}"></video></div>`;
-  return `<div class="fmedia vid vph ${v.t}" data-t="${v.t}" data-id="${x(v.id)}" onclick="playVid(this)">${v.t === 'yt' ? `<img src="https://i.ytimg.com/vi/${x(v.id)}/hqdefault.jpg" loading="lazy" alt="">` : '<span class="vtag">Google Drive</span>'}<button class="vplay" aria-label="נגן סרטון">${I.play}</button></div>`;
+  return `<div class="fmedia vid vph ${v.t}" data-t="${v.t}" data-id="${x(v.id)}" onclick="playVid(this)">${v.t === 'yt' ? `<img src="https://i.ytimg.com/vi/${x(v.id)}/maxresdefault.jpg" data-id="${x(v.id)}" loading="lazy" alt="" onload="thumbFix(this)" onerror="thumbFix(this)">` : '<span class="vtag">Google Drive</span>'}<button class="vplay" aria-label="נגן סרטון">${I.play}</button></div>`;
+}
+/* תמונה ממוזערת באיכות הגבוהה ביותר שקיימת: maxres (1280px) -> sd (640px) -> hq (480px) */
+function thumbFix(i) {
+  const L = ['maxresdefault', 'sddefault', 'hqdefault'], n = +(i.dataset.n || 0);
+  if (i.naturalWidth >= 320 || n + 1 >= L.length) return;
+  i.dataset.n = n + 1; i.src = `https://i.ytimg.com/vi/${i.dataset.id}/${L[n + 1]}.jpg`;
 }
 function playVid(el) {
   const t = el.dataset.t, id = el.dataset.id;
