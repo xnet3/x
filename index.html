@@ -143,10 +143,63 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hi
 .pmenu button:hover{background:var(--bg2)}
 .pmenu button.danger{color:var(--red)}
 .pmenu svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+/* home */
+.home{max-width:760px;margin:0 auto}
+.home>*{animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
+.home>*:nth-child(2){animation-delay:.08s}.home>*:nth-child(3){animation-delay:.14s}.home>*:nth-child(4){animation-delay:.2s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.hero{position:relative;isolation:isolate;overflow:hidden;border-radius:32px;padding:46px 34px 26px;margin-bottom:34px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--raised)}
+.hero-bg{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.hero-bg i{position:absolute;border-radius:50%;filter:blur(64px);opacity:.42;animation:float 15s ease-in-out infinite}
+body.light .hero-bg i{opacity:.28}
+.hero-bg i:nth-child(1){width:320px;height:320px;background:#7c5cff;top:-120px;right:-80px}
+.hero-bg i:nth-child(2){width:280px;height:280px;background:#ff6a88;bottom:-130px;left:-60px;animation-delay:-5s}
+.hero-bg i:nth-child(3){width:220px;height:220px;background:#22d3ee;top:25%;left:38%;animation-delay:-10s;opacity:.22}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(34px,-26px) scale(1.14)}}
+.hpill{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:500;color:var(--txt2);background:var(--bg2);border:1px solid var(--border);padding:6px 13px;border-radius:999px;margin-bottom:18px}
+.hdot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:ping 1.8s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%,100%{box-shadow:0 0 0 9px rgba(34,197,94,0)}}
+.hero h1{font-size:clamp(30px,6vw,48px);font-weight:800;letter-spacing:-1.2px;line-height:1.12;margin-bottom:14px}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,#7c5cff,#ff6a88,#22d3ee,#7c5cff);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:grad 7s linear infinite}
+@keyframes grad{to{background-position:-250% 0}}
+.hsub{font-size:15px;line-height:1.7;color:var(--txt2);max-width:520px;margin-bottom:22px}
+.hcta{display:flex;gap:10px;flex-wrap:wrap}
+.hstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:30px;padding-top:20px;border-top:1px solid var(--border)}
+.hstats b{display:block;font-size:26px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.hstats span{font-size:12.5px;color:var(--txt3)}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin:0 4px 12px}
+.sec-h h2{font-size:17px;font-weight:800;letter-spacing:-.3px}
+.sec-h a{font-size:12.5px;color:var(--txt2);cursor:pointer}.sec-h a:hover{color:var(--txt)}
+#hch,#htr{margin-bottom:30px}#hch:empty,#htr:empty{display:none}
+.hscroll{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 4px 14px;margin:0 -4px;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+.hscroll .skel{flex:0 0 184px;height:190px;margin:0}
+.hch{flex:0 0 184px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:20px 14px 16px;box-shadow:var(--raised);transition:transform .2s,box-shadow .2s}
+.hch:hover{transform:translateY(-4px);box-shadow:0 12px 28px var(--shadow)}
+.hch .vav{width:60px;height:60px;font-size:18px;margin-bottom:4px}
+.hch .fp-name{max-width:100%}
+.hch .cbio{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:2px 0 6px}
+.hch .sbtn{margin-top:auto;padding:7px 18px;font-size:12.5px}
+.trend{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.tcard{cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:14px 16px;box-shadow:var(--raised);display:flex;flex-direction:column;gap:8px;transition:transform .2s}
+.tcard:hover{transform:translateY(-3px)}
+.tl{font-size:12px;font-weight:700;color:#ff4d6d}
+.tt{font-size:13.5px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.fpost.flash{animation:flash 1.5s}
+@keyframes flash{0%,60%{box-shadow:0 0 0 3px var(--txt)}100%{box-shadow:var(--raised)}}
+@media(max-width:640px){.hero{padding:32px 20px 20px;border-radius:26px}}
 </style>
 </head>
 <body>
 <script>document.body.className=localStorage.getItem('xf_theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')</script>
+<script>
+/* כשהדף נטען בתוך iframe נסתר של חידוש התחברות שקט - מעבירים את התוצאה לדף הראשי ולא מריצים את האתר */
+if (window.parent !== window && /[#&](access_token|error)=/.test(location.hash)) {
+  window.__xfFrame = true;
+  try { parent.postMessage({ xfAuth: location.hash }, location.origin); } catch (e) {}
+}
+</script>
 <div id="splash"><div class="sp-logo">X<i>feed</i></div><div class="sp-bar"></div><div class="sp-txt" id="sp-txt">טוען…</div></div>
 
 <div id="topbar">
@@ -187,7 +240,6 @@ body{background:var(--bg);color:var(--txt);font-family:var(--font);overflow-x:hi
 </div></div>
 <div id="toast"></div>
 
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 /* ============ CONFIG ============ */
 const API = 'https://script.google.com/macros/s/AKfycbwXomzzN8-Mps36nkncrpEFMIcHHdWABATIY7THn2cQ9IpfEslaP_-iKF-lulDVq6Ea/exec';   // ← הדבק כאן את כתובת ה-Web App של האפסקריפט
@@ -218,7 +270,7 @@ const I = {
 const av = u => u && u.picture ? `<img src="${x(u.picture)}" referrerpolicy="no-referrer" alt="">` : x(((u && u.name) || '?').slice(0, 2));
 
 /* ============ STATE ============ */
-let tok = null, me = null, tc = null, view = 'home', cuid = null, posts = [], next = null, busy = false, chans = [], q = '', rid = 0, img = '', io = null;
+let tok = null, me = null, view = 'home', cuid = null, posts = [], next = null, busy = false, chans = [], q = '', rid = 0, img = '', io = null;
 const rdy = { feed: false, auth: false };
 function hideSplash() { const e = $('#splash'); if (e) { e.classList.add('out'); setTimeout(() => e.remove(), 500); } }
 function mark(k) { rdy[k] = true; if (rdy.feed && rdy.auth) hideSplash(); }
@@ -236,53 +288,74 @@ async function api(a, p = {}) {
 }
 
 /* ============ GOOGLE SIGN-IN ============ */
-let silent = false, onTok = null;
-function initAuth() {
-  if (!(window.google && google.accounts && google.accounts.oauth2)) return setTimeout(initAuth, 200);
-  tc = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID, scope: SCOPE,
-    callback: r => {
-      const was = silent; silent = false;
-      const w = onTok; onTok = null;
-      if (!r || r.error) { if (w) w(false); return was ? 0 : toast('ההתחברות עם Google נכשלה או בוטלה'); }
-      tok = r.access_token;
-      localStorage.setItem('xf_tok', JSON.stringify({ tok, exp: Date.now() + (r.expires_in || 3500) * 1000 })); localStorage.setItem('xf_was', '1');
-      if (w) return w(true);
-      boot(!was);
-    },
-    error_callback: () => { silent = false; const w = onTok; onTok = null; if (w) w(false); }
-  });
+const REDIR = () => location.origin + location.pathname;   // חייב להיות רשום ב-Authorized redirect URIs ב-Google Cloud
+const rnd = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+const authUrl = o => 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
+  client_id: CLIENT_ID, redirect_uri: REDIR(), response_type: 'token', scope: SCOPE, include_granted_scopes: 'true', ...o });
+
+/* התחברות באותו טאב: עוברים רגע לגוגל וחוזרים לכאן עם הטוקן ב-hash */
+function signIn() {
+  const s = rnd();
+  try { sessionStorage.setItem('xf_state', s); sessionStorage.setItem('xf_ret', location.hash || '#/home'); } catch (e) {}
+  location.href = authUrl({ state: s });
 }
-function signIn() { if (!tc) return toast('טוען את מסך ההתחברות...'); tc.requestAccessToken({ prompt: '' }); }
+function saveAuth(p) {
+  const t = p.get('access_token'); if (!t) return false;
+  tok = t;
+  localStorage.setItem('xf_tok', JSON.stringify({ tok, exp: Date.now() + (+p.get('expires_in') || 3500) * 1000 }));
+  localStorage.setItem('xf_was', '1');
+  return true;
+}
+/* חזרה מגוגל: קוראים את הטוקן מה-hash, מנקים את הכתובת ומחזירים את המשתמש לעמוד שבו היה */
+function consumeAuthHash() {
+  if (!/[#&](access_token|error)=/.test(location.hash)) return false;
+  const p = new URLSearchParams(location.hash.slice(1));
+  let ret = '#/home', st = null;
+  try { ret = sessionStorage.getItem('xf_ret') || ret; st = sessionStorage.getItem('xf_state'); sessionStorage.removeItem('xf_ret'); sessionStorage.removeItem('xf_state'); } catch (e) {}
+  if (!/^#\/[\w\/]*$/.test(ret)) ret = '#/home';
+  history.replaceState(null, '', location.pathname + location.search + ret);
+  if (!st || p.get('state') !== st) return false;
+  if (p.get('error')) { toast('ההתחברות עם Google נכשלה או בוטלה'); return false; }
+  return saveAuth(p);
+}
 function dropSession(keep) {
   const t = tok; tok = null; me = null; localStorage.removeItem('xf_tok'); localStorage.removeItem('xf_me'); if (!keep) localStorage.removeItem('xf_was'); renderAuth();
-  if (!keep && t && window.google && google.accounts) try { google.accounts.oauth2.revoke(t, () => {}); } catch (e) {}
+  if (!keep && t) try { fetch('https://oauth2.googleapis.com/revoke?token=' + encodeURIComponent(t), { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }).catch(() => {}); } catch (e) {}
 }
 function signOut() { dropSession(); $('#user-menu').classList.remove('open'); toast('התנתקת'); if (view === 'following' || view === 'liked') go('home'); else render(); }
+/* חידוש שקט של הטוקן ב-iframe נסתר (בלי חלון קופץ ובלי לעזוב את הדף) */
 function silentLogin() {
   return new Promise(res => {
-    const t0 = Date.now();
-    const go = () => {
-      if (tc) { silent = true; onTok = res; try { tc.requestAccessToken({ prompt: '' }); } catch (e) { onTok = null; silent = false; res(false); } }
-      else if (Date.now() - t0 > 3000) res(false); else setTimeout(go, 100);
+    const st = rnd(), f = document.createElement('iframe');
+    f.style.display = 'none'; f.setAttribute('aria-hidden', 'true');
+    let done = false, tm;
+    const fin = ok => { if (done) return; done = true; removeEventListener('message', on); clearTimeout(tm); f.remove(); res(ok); };
+    const on = e => {
+      if (e.origin !== location.origin || e.source !== f.contentWindow || !e.data || !e.data.xfAuth) return;
+      const p = new URLSearchParams(String(e.data.xfAuth).slice(1));
+      fin(p.get('state') === st && !p.get('error') && saveAuth(p));
     };
-    go(); setTimeout(() => { onTok = null; res(false); }, 5000);
+    addEventListener('message', on);
+    tm = setTimeout(() => fin(false), 6000);
+    f.src = authUrl({ prompt: 'none', state: st });
+    document.body.appendChild(f);
   });
 }
 async function start() {
   try { Object.keys(localStorage).forEach(k => { if (k.startsWith('xf_c_')) localStorage.removeItem(k); }); } catch (e) {}
+  const fresh = consumeAuthHash();
   let st = null;
   try { st = JSON.parse(localStorage.getItem('xf_tok') || 'null'); } catch (e) {}
   if (st && st.exp > Date.now() + 60000) tok = st.tok;
   else if (localStorage.getItem('xf_was')) { $('#sp-txt').textContent = 'בודק התחברות עם Google…'; await silentLogin(); }
   if (tok) { try { me = JSON.parse(localStorage.getItem('xf_me') || 'null'); } catch (e) {} renderAuth(); }
   route();
-  if (tok) boot(false, true); else mark('auth');
+  if (tok) boot(fresh, true); else mark('auth');
 }
 async function boot(announce, first) {
   if (!first) render();
   try {
-    me = (await api('init')).me; try { localStorage.setItem('xf_me', JSON.stringify(me)); } catch (e) {} renderAuth(); navOn();
+    me = (await api('init')).me; try { localStorage.setItem('xf_me', JSON.stringify(me)); } catch (e) {} renderAuth(); navOn(); if (view === 'home') drawHero();
     if (announce) toast('שלום, ' + String(me.name).split(' ')[0]);
     const c = $('#cmp');
     if (c && !c.innerHTML && me && (view !== 'channel' || cuid === me.uid) && view !== 'liked') c.innerHTML = cmpHtml();
@@ -328,10 +401,14 @@ async function render() {
     try { await loadChans(); } catch (e) { mark('feed'); return; }
     if (my === rid) drawChans(); mark('feed'); return;
   }
-  ct.innerHTML = `<div class="feed"><div id="hd"></div><div id="cmp"></div><div id="feed-list"><div class="skel"></div><div class="skel"></div></div><div id="feed-end" class="feed-end"></div></div>`;
+  ct.innerHTML = (view === 'home' ? `<div class="home">${heroHtml()}` : '') + `<div class="feed"><div id="hd"></div><div id="cmp"></div><div id="feed-list"><div class="skel"></div><div class="skel"></div></div><div id="feed-end" class="feed-end"></div></div>` + (view === 'home' ? '</div>' : '');
   more(my, true);
+  if (view === 'home') {
+    drawHero();
+    loadChans().then(() => { if (my === rid && view === 'home') { drawStats(); drawStrip(); } }).catch(() => { const h = $('#hch'); if (h) h.innerHTML = ''; });
+  }
   if (view === 'channel') { try { await loadChans(); } catch (e) { mark('feed'); return; } if (my !== rid) return; drawHd(); }
-  else $('#hd').innerHTML = head(...{ home: ['דף הבית', 'הפוסטים האחרונים מכל הערוצים'], following: ['פיד', 'פוסטים מערוצים שאתה עוקב אחריהם'], liked: ['אהבתי', 'פוסטים שסימנת בלב'] }[view]);
+  else $('#hd').innerHTML = head(...{ home: ['הפוסטים האחרונים', 'טרי מכל הערוצים'], following: ['פיד', 'פוסטים מערוצים שאתה עוקב אחריהם'], liked: ['אהבתי', 'פוסטים שסימנת בלב'] }[view]);
   if (me && (view !== 'channel' || cuid === me.uid) && view !== 'liked') $('#cmp').innerHTML = cmpHtml();
 }
 
@@ -345,6 +422,7 @@ async function more(my, first) {
     if (first) { posts = []; $('#feed-list').innerHTML = ''; }
     posts.push(...r.posts); next = r.next;
     $('#feed-list').insertAdjacentHTML('beforeend', r.posts.filter(match).map(postHtml).join(''));
+    if (first && view === 'home') drawTrend();
   } catch (err) { if (first && my === rid && !posts.length) $('#feed-list').innerHTML = ''; }
   busy = false; endState(); if (first) mark('feed');
 }
@@ -474,11 +552,12 @@ function drawHd() {
   if (!c) return $('#content').innerHTML = empty('הערוץ לא נמצא', 'ייתכן שהקישור שגוי.');
   $('#hd').innerHTML = `<div class="chead"><div class="vav">${av(c)}</div><div class="fp-who"><h1>${x(c.name)}</h1><div class="fp-time">${stats(c)}</div>${c.bio ? `<div class="cbio">${x(c.bio)}</div>` : ''}</div>${me && c.uid === me.uid ? '<button class="sbtn" onclick="editProf()">עריכה</button>' : folBtn(c)}</div>`;
 }
+const redraw = () => view === 'channels' ? drawChans() : view === 'home' ? drawStrip() : drawHd();
 async function follow(uid) {
   if (!me) return toast('התחבר כדי לעקוב אחרי ערוצים');
   const c = chans.find(c => c.uid === uid), on = !c.following;
-  c.following = on; c.followers += on ? 1 : -1; view === 'channels' ? drawChans() : drawHd();
-  try { await api('follow', { uid, on }); } catch (e) { c.following = !on; c.followers += on ? -1 : 1; view === 'channels' ? drawChans() : drawHd(); }
+  c.following = on; c.followers += on ? 1 : -1; redraw();
+  try { await api('follow', { uid, on }); } catch (e) { c.following = !on; c.followers += on ? -1 : 1; redraw(); }
 }
 function editProf() {
   $('#user-menu').classList.remove('open');
@@ -492,6 +571,48 @@ async function saveProf() {
   } catch (e) {}
 }
 
+/* ============ HOME ============ */
+const greet = () => { const h = new Date().getHours(); return h < 5 ? 'לילה טוב' : h < 12 ? 'בוקר טוב' : h < 17 ? 'צהריים טובים' : h < 21 ? 'ערב טוב' : 'לילה טוב'; };
+const skels = '<div class="hscroll"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';
+function heroHtml() {
+  return `<section class="hero"><div class="hero-bg"><i></i><i></i><i></i></div><div id="hmain"></div>
+    <div id="hstats" class="hstats"><div><b>–</b><span>ערוצים</span></div><div><b>–</b><span>פוסטים</span></div><div><b>–</b><span>עוקבים</span></div></div></section>
+    <div id="hch">${skels}</div><div id="htr"></div>`;
+}
+function drawHero() {
+  const e = $('#hmain'); if (!e) return;
+  const n = me ? x(String(me.name).split(' ')[0]) : '';
+  e.innerHTML = `<div class="hpill"><span class="hdot"></span>הקהילה פעילה עכשיו</div>
+    <h1>${me ? `${greet()}, <em>${n}</em>` : 'כל מה שחדש,<br><em>במקום אחד</em>'}</h1>
+    <p class="hsub">${me ? 'מה בא לך לשתף היום? כתוב פוסט, גלה ערוצים חדשים ותראה מה קורה אצל מי שאתה עוקב אחריו.' : 'שתף רגעים, עקוב אחרי ערוצים שאתה אוהב וגלה אנשים חדשים. התחברות אחת עם Google, וזהו.'}</p>
+    <div class="hcta">${me ? '<button class="sbtn sbtn-main" onclick="focusCmp()">כתוב פוסט</button>' : '<button class="sbtn sbtn-main" onclick="signIn()">התחבר עם Google</button>'}<button class="sbtn" onclick="go('channels')">גלה ערוצים</button></div>`;
+}
+function focusCmp() { const c = $('#ct'); if (!c) return; c.scrollIntoView({ behavior: 'smooth', block: 'center' }); c.focus({ preventScroll: true }); }
+function countUp(el, n) {
+  const t0 = performance.now(), d = 900;
+  (function f(t) { const p = Math.min(1, (t - t0) / d); el.textContent = Math.round(n * (1 - Math.pow(1 - p, 3))).toLocaleString('he-IL'); if (p < 1) requestAnimationFrame(f); })(t0);
+}
+function drawStats() {
+  const hs = $('#hstats'); if (!hs) return;
+  const tp = chans.reduce((s, c) => s + (c.posts || 0), 0), tf = chans.reduce((s, c) => s + (c.followers || 0), 0);
+  hs.innerHTML = [[chans.length, 'ערוצים'], [tp, 'פוסטים'], [tf, 'עוקבים']].map(([n, l]) => `<div><b>0</b><span>${l}</span></div>`).join('');
+  hs.querySelectorAll('b').forEach((b, i) => countUp(b, [chans.length, tp, tf][i]));
+}
+const hchCard = c => `<div class="hch"><div class="vav" onclick="go('channel','${x(c.uid)}')">${av(c)}</div><div class="fp-name" onclick="go('channel','${x(c.uid)}')">${x(c.name)}</div><div class="fp-time">${stats(c)}</div>${c.bio ? `<div class="cbio">${x(c.bio)}</div>` : ''}${folBtn(c)}</div>`;
+function drawStrip() {
+  const hc = $('#hch'); if (!hc) return;
+  const old = hc.querySelector('.hscroll'), sl = old ? old.scrollLeft : 0;
+  const L = [...chans].sort((a, b) => (b.followers - a.followers) || (b.posts - a.posts)).slice(0, 10);
+  hc.innerHTML = L.length ? `<div class="sec-h"><h2>ערוצים מומלצים</h2><a onclick="go('channels')">לכל הערוצים ←</a></div><div class="hscroll">${L.map(hchCard).join('')}</div>` : '';
+  const ns = hc.querySelector('.hscroll'); if (ns) ns.scrollLeft = sl;
+}
+function drawTrend() {
+  const e = $('#htr'); if (!e) return;
+  const T = posts.filter(p => p.likes > 0 && p.text).sort((a, b) => b.likes - a.likes).slice(0, 3);
+  e.innerHTML = T.length ? `<div class="sec-h"><h2>אהובים עכשיו</h2></div><div class="trend">${T.map(p => `<div class="tcard" onclick="jump('${x(p.id)}')"><div class="tl">♥ ${p.likes}</div><div class="tt">${x(p.text)}</div><div class="fp-time">${x(p.name)}</div></div>`).join('')}</div>` : '';
+}
+function jump(id) { const el = document.querySelector(`[data-id="${id}"]`); if (!el) return; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); }
+
 /* ============ INIT ============ */
 $('#theme-btn').onclick = () => { document.body.className = document.body.classList.contains('dark') ? 'light' : 'dark'; localStorage.setItem('xf_theme', document.body.className); };
 document.addEventListener('click', e => {
@@ -500,9 +621,7 @@ document.addEventListener('click', e => {
 $('#pm').onclick = e => { if (e.target.id === 'pm') e.target.classList.remove('open'); };
 addEventListener('hashchange', route);
 document.addEventListener('click', closeMenus);
-initAuth(); renderAuth(); start();
-// הטוקן של גוגל פג אחרי שעה: בלחיצה הראשונה בדף מנסים להתחבר מחדש בשקט
-document.addEventListener('click', e => { if (!tok && tc && !e.target.closest('.yt-login-btn') && localStorage.getItem('xf_was')) { silent = true; tc.requestAccessToken({ prompt: '' }); } }, { once: true });
+if (!window.__xfFrame) { renderAuth(); start(); }
 </script>
 </body>
 </html>
