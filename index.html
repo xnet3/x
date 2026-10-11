@@ -326,6 +326,52 @@ function prefetch() {
   PRE.feed = bp.then(r => r.feed);
   [PRE.init, PRE.channels, PRE.feed].forEach(p => p && p.catch(() => {}));
 }
+
+/* ============ SNAPSHOT: הצגה מיידית מנתונים ציבוריים, ואז החלפה בנתונים המלאים מהשרת ============ */
+/* הדבק כאן את שני קישורי ה-CSV מ"פרסום באינטרנט" של הלשוניות pub_posts ו-pub_channels (בלי הקישורים התכונה פשוט כבויה) */
+const PUB = {
+  posts: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSAbCLKwyhRnK4W3IpH1Xu_ORF25z0PBpqgaYh73xD1WWvDqpfK97ciMxoxmJbJuMO0Gva-KD2zJEmt/pub?gid=1845021833&single=true&output=csv',
+  channels: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSAbCLKwyhRnK4W3IpH1Xu_ORF25z0PBpqgaYh73xD1WWvDqpfK97ciMxoxmJbJuMO0Gva-KD2zJEmt/pub?gid=1312165425&single=true&output=csv'
+};
+function parseCsv(t) {
+  const R = []; let r = [], f = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { r.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && t[i + 1] === '\n') i++; r.push(f); f = ''; R.push(r); r = []; }
+    else f += c;
+  }
+  if (f !== '' || r.length) { r.push(f); R.push(r); }
+  return R;
+}
+async function pubGet(u) {
+  const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 8000);
+  try {
+    const r = await fetch(u, { signal: ac.signal }); if (!r.ok) throw 0;
+    const R = parseCsv(await r.text()), h = R[0] || [];
+    return R.slice(1).filter(r => r.some(v => v !== '')).map(r => Object.fromEntries(h.map((k, i) => [k, r[i] ?? ''])));
+  } finally { clearTimeout(tm); }
+}
+function loadSnap() {
+  if (!PUB.posts || !PUB.channels) return null;
+  return Promise.all([pubGet(PUB.posts), pubGet(PUB.channels)]).then(([p, c]) => ({
+    posts: p.filter(r => r.id).map(r => ({ id: r.id, uid: r.uid, name: r.name, picture: r.picture, text: r.text, image: r.image, video: r.video, createdAt: +r.createdAt || 0, editedAt: +r.editedAt || 0, likes: +r.likes || 0, liked: false, mine: false, can: false })),
+    chans: c.filter(r => r.uid).map(r => ({ uid: r.uid, name: r.name, picture: r.picture, bio: r.bio, posts: +r.posts || 0, followers: +r.followers || 0, following: false }))
+  })).catch(() => null);
+}
+const SNAP = loadSnap();
+let realDone = false, shownSig = null;
+const sigOf = L => L.map(p => p.id + ':' + (p.likes || 0) + ':' + (p.editedAt || 0)).join();
+function paintSnap(d) {
+  if (realDone || view !== 'home' || !$('#feed-list')) return;
+  const P = d.posts.slice(0, 8); if (!P.length) return;
+  posts = P; shownSig = sigOf(P);
+  $('#feed-list').innerHTML = P.filter(match).map(postHtml).join('');
+  drawTrend();
+  if (!chans.length && d.chans.length) { chans = d.chans; drawStats(); drawStrip(); }
+}
 async function api(a, p = {}) {
   if (!API) { toast('חסרה כתובת ה-Web App בקבוע API'); throw 0; }
   const key = (a === 'feed' && (p.s || 'home') === 'home' && !p.before) ? 'feed' : (a === 'init' || a === 'channels') ? a : null;
@@ -453,9 +499,11 @@ async function render() {
     try { await loadChans(); } catch (e) { mark('feed'); return; }
     if (my === rid) drawChans(); mark('feed'); return;
   }
+  realDone = false; shownSig = null;
   ct.innerHTML = (view === 'home' ? `<div class="home">${heroHtml()}` : '') + `<div class="feed"><div id="hd"></div><div id="cmp"></div><div id="feed-list"><div class="skel"></div><div class="skel"></div></div><div id="feed-end" class="feed-end"></div></div>` + (view === 'home' ? '</div>' : '');
   more(my, true);
   if (view === 'home') {
+    if (SNAP) SNAP.then(d => { if (d && my === rid) paintSnap(d); });
     drawHero();
     loadChans().then(() => { if (my === rid && view === 'home') { drawStats(); drawStrip(); } }).catch(chansFail);
   }
@@ -472,9 +520,10 @@ async function more(my, first) {
   try {
     const r = await api('feed', { s: view === 'channel' ? 'user' : view, uid: cuid, before: next, limit: 8 });
     if (my !== rid) { if (first) mark('feed'); return; }
-    if (first) { posts = []; $('#feed-list').innerHTML = ''; }
+    let keep = false;
+    if (first) { realDone = true; posts = []; keep = !tok && !q && shownSig !== null && sigOf(r.posts) === shownSig; if (!keep) $('#feed-list').innerHTML = ''; }
     posts.push(...r.posts); next = r.next;
-    $('#feed-list').insertAdjacentHTML('beforeend', r.posts.filter(match).map(postHtml).join(''));
+    if (!keep) $('#feed-list').insertAdjacentHTML('beforeend', r.posts.filter(match).map(postHtml).join(''));
     if (first && view === 'home') drawTrend();
   } catch (err) { if (first && my === rid && !posts.length) { $('#feed-list').innerHTML = ''; failed = true; } }
   busy = false; endState(); if (failed) feedFail(); if (first) mark('feed');
@@ -726,6 +775,7 @@ function feedFail() { const e = $('#feed-end'); if (e) e.innerHTML = `<div class
 function drawStats() {
   const hs = $('#hstats'); if (!hs) return;
   const tp = chans.reduce((s, c) => s + (c.posts || 0), 0), tf = chans.reduce((s, c) => s + (c.followers || 0), 0);
+  const key = [chans.length, tp, tf].join(); if (hs.dataset.v === key) return; hs.dataset.v = key;
   hs.innerHTML = [[chans.length, 'ערוצים'], [tp, 'פוסטים'], [tf, 'עוקבים']].map(([n, l]) => `<div><b>0</b><span>${l}</span></div>`).join('');
   hs.querySelectorAll('b').forEach((b, i) => countUp(b, [chans.length, tp, tf][i]));
 }
