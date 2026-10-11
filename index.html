@@ -299,10 +299,25 @@ function mark(k) { rdy[k] = true; if (rdy.feed && rdy.auth) hideSplash(); }
 setTimeout(hideSplash, 9000);   // רשת ביטחון
 
 /* ============ API ============ */
+const raw = async (a, p = {}) => (await fetch(API, { method: 'POST', body: JSON.stringify({ a, token: tok, ...p }) })).json();
+/* טעינה ראשונית בקריאה אחת: המשתמש + הערוצים + עמוד הפוסטים הראשון (במקום 3 קריאות נפרדות) */
+const PRE = { t: 0 };
+function prefetch() {
+  if (!API) return;
+  PRE.t = Date.now();
+  const bp = raw('boot', { limit: 8 }).then(r => { if (r.error) throw r.error; return r; });
+  bp.catch(() => {});
+  PRE.init = tok ? bp.then(r => ({ me: r.me })) : null;
+  PRE.channels = bp.then(r => ({ channels: r.channels }));
+  PRE.feed = bp.then(r => r.feed);
+  [PRE.init, PRE.channels, PRE.feed].forEach(p => p && p.catch(() => {}));
+}
 async function api(a, p = {}) {
   if (!API) { toast('חסרה כתובת ה-Web App בקבוע API'); throw 0; }
+  const key = (a === 'feed' && (p.s || 'home') === 'home' && !p.before) ? 'feed' : (a === 'init' || a === 'channels') ? a : null;
+  if (key && PRE[key] && Date.now() - PRE.t < 15000) { const pr = PRE[key]; PRE[key] = null; try { return await pr; } catch (e) {} }
   let r;
-  try { r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ a, token: tok, ...p }) })).json(); }
+  try { r = await raw(a, p); }
   catch (e) { toast('שגיאת רשת, נסה שוב'); throw e; }
   if (r.error === 'auth') { dropSession(true); toast('ההתחברות פגה, התחבר שוב'); throw 0; }
   if (r.error) { toast(r.error === 'slow' ? 'רגע, לאט יותר' : 'שגיאה: ' + r.error); throw 0; }
@@ -371,6 +386,7 @@ async function start() {
   if (st && st.exp > Date.now() + 60000) tok = st.tok;
   else if (localStorage.getItem('xf_was')) { $('#sp-txt').textContent = 'בודק התחברות עם Google…'; await silentLogin(); }
   if (tok) { try { me = JSON.parse(localStorage.getItem('xf_me') || 'null'); } catch (e) {} renderAuth(); }
+  prefetch();
   route();
   if (tok) boot(fresh, true); else mark('auth');
 }
