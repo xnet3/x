@@ -209,6 +209,7 @@ body.light .hero-bg i{opacity:.28}
 .vtag{position:absolute;bottom:10px;right:12px;font-size:11.5px;color:#cbd5e1}
 .vlink{display:block;margin:6px 2px 4px;font-size:13px;color:var(--txt2);overflow-wrap:anywhere;direction:ltr;text-align:left}
 .fp-title a{color:inherit;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+.rtry{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:18px;color:var(--txt2);font-size:13.5px}
 </style>
 </head>
 <body>
@@ -299,7 +300,20 @@ function mark(k) { rdy[k] = true; if (rdy.feed && rdy.auth) hideSplash(); }
 setTimeout(hideSplash, 9000);   // רשת ביטחון
 
 /* ============ API ============ */
-const raw = async (a, p = {}) => (await fetch(API, { method: 'POST', body: JSON.stringify({ a, token: tok, ...p }) })).json();
+/* קריאות קריאה-בלבד (בטוחות לניסיון חוזר) נשלחות עד 3 פעמים אם השרת נכשל זמנית, מחזיר דף שגיאה, או לא עונה */
+const IDEM = ['boot', 'feed', 'channels', 'init'], TRANSIENT = /exception|timed out|too many|lock|service|try again|temporar/i;
+async function raw(a, p = {}) {
+  const n = IDEM.includes(a) ? 3 : 1;
+  for (let i = 1; ; i++) {
+    const ac = new AbortController(), tm = n > 1 ? setTimeout(() => ac.abort(), 20000) : 0;
+    try {
+      const r = await (await fetch(API, { method: 'POST', body: JSON.stringify({ a, token: tok, ...p }), signal: ac.signal })).json();
+      if (r && r.error && i < n && TRANSIENT.test(String(r.error))) throw r.error;
+      return r;
+    } catch (e) { if (i >= n) throw e; await new Promise(f => setTimeout(f, 500 * i * i)); }
+    finally { clearTimeout(tm); }
+  }
+}
 /* טעינה ראשונית בקריאה אחת: המשתמש + הערוצים + עמוד הפוסטים הראשון (במקום 3 קריאות נפרדות) */
 const PRE = { t: 0 };
 function prefetch() {
@@ -443,7 +457,7 @@ async function render() {
   more(my, true);
   if (view === 'home') {
     drawHero();
-    loadChans().then(() => { if (my === rid && view === 'home') { drawStats(); drawStrip(); } }).catch(() => { const h = $('#hch'); if (h) h.innerHTML = ''; });
+    loadChans().then(() => { if (my === rid && view === 'home') { drawStats(); drawStrip(); } }).catch(chansFail);
   }
   if (view === 'channel') { try { await loadChans(); } catch (e) { mark('feed'); return; } if (my !== rid) return; drawHd(); }
   else $('#hd').innerHTML = head(...{ home: ['הפוסטים האחרונים', 'טרי מכל הערוצים'], following: ['פיד', 'פוסטים מערוצים שאתה עוקב אחריהם'], liked: ['אהבתי', 'פוסטים שסימנת בלב'] }[view]);
@@ -454,6 +468,7 @@ async function more(my, first) {
   if (busy) return; busy = true;
   const e = $('#feed-end');
   if (!first) e.innerHTML = '<div class="feed-spin"></div>';
+  let failed = false;
   try {
     const r = await api('feed', { s: view === 'channel' ? 'user' : view, uid: cuid, before: next, limit: 8 });
     if (my !== rid) { if (first) mark('feed'); return; }
@@ -461,8 +476,8 @@ async function more(my, first) {
     posts.push(...r.posts); next = r.next;
     $('#feed-list').insertAdjacentHTML('beforeend', r.posts.filter(match).map(postHtml).join(''));
     if (first && view === 'home') drawTrend();
-  } catch (err) { if (first && my === rid && !posts.length) $('#feed-list').innerHTML = ''; }
-  busy = false; endState(); if (first) mark('feed');
+  } catch (err) { if (first && my === rid && !posts.length) { $('#feed-list').innerHTML = ''; failed = true; } }
+  busy = false; endState(); if (failed) feedFail(); if (first) mark('feed');
 }
 function endState() {
   const e = $('#feed-end'); if (!e) return;
@@ -702,6 +717,12 @@ function countUp(el, n) {
   const t0 = performance.now(), d = 900;
   (function f(t) { const p = Math.min(1, (t - t0) / d); el.textContent = Math.round(n * (1 - Math.pow(1 - p, 3))).toLocaleString('he-IL'); if (p < 1) requestAnimationFrame(f); })(t0);
 }
+function chansFail() { const h = $('#hch'); if (h && view === 'home') h.innerHTML = `<div class="rtry">לא הצלחנו לטעון את הערוצים <button class="sbtn" onclick="retryChans()">נסה שוב</button></div>`; }
+function retryChans() {
+  const h = $('#hch'); if (h) h.innerHTML = skels;
+  loadChans().then(() => { if (view === 'home') { drawStats(); drawStrip(); } }).catch(chansFail);
+}
+function feedFail() { const e = $('#feed-end'); if (e) e.innerHTML = `<div class="rtry">לא הצלחנו לטעון את הפוסטים <button class="sbtn" onclick="route()">נסה שוב</button></div>`; }
 function drawStats() {
   const hs = $('#hstats'); if (!hs) return;
   const tp = chans.reduce((s, c) => s + (c.posts || 0), 0), tf = chans.reduce((s, c) => s + (c.followers || 0), 0);
